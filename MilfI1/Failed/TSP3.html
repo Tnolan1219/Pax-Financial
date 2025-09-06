@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mil‑Fi | TSP + Career Starter Loan (v1, part 1)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.umd.min.js"></script>
+  <style>
+    :root{
+      --bg:#0b1020; --panel:#0f1630; --panel2:#131c3f; --ink:#eaf0ff; --muted:#b6c3ff;
+      --accent:#7aa2ff; --accent2:#b58cff; --good:#24d39a; --warn:#ffce54; --bad:#ff6b6b;
+      --input:#1a2452; --line:#22306b; --chip:#1b2250; --shadow:0 10px 30px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:
+      radial-gradient(1200px 700px at 10% -10%,#1a2452 0%,transparent 60%),
+      radial-gradient(900px 600px at 110% 10%,#1a2250 0%,transparent 55%),var(--bg); color:var(--ink)}
+    a{color:var(--accent)}
+    .wrap{max-width:1200px;margin:auto;padding:22px}
+    header.sticky{position:sticky;top:0;z-index:5;background:linear-gradient(180deg,rgba(11,16,32,.95),rgba(11,16,32,.65) 60%,transparent);
+      backdrop-filter:blur(6px)}
+    .card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
+    .pad{padding:18px}
+    .row{display:flex;align-items:center;gap:10px}
+    .space{justify-content:space-between}
+    h1{font-size:28px;margin:6px 0 6px}
+    h2{font-size:18px;margin:0 0 8px}
+    .sub{color:var(--muted);font-weight:600}
+    .tabs{display:flex;gap:8px;flex-wrap:wrap}
+    .tab{cursor:pointer;padding:10px 14px;border-radius:12px;border:1px solid var(--line);
+      background:linear-gradient(180deg,#22306b,#1a2452);font-weight:800;color:#fff;letter-spacing:.2px}
+    .tab.active{outline:2px solid #2f5fff}
+    .grid{display:grid;gap:14px}
+    .two{grid-template-columns:1fr 1fr}
+    .three{grid-template-columns:repeat(3,1fr)}
+    @media (max-width:1000px){.two,.three{grid-template-columns:1fr}}
+    label{font-size:12px;color:var(--muted);display:block;margin:0 0 6px}
+    input,select{width:100%;background:var(--input);border:1px solid var(--line);color:var(--ink);
+      padding:10px 12px;border-radius:10px;font:600 14px/1 Inter}
+    input[type="range"]{height:36px;padding:0}
+    .hint{font-size:12px;color:var(--muted)}
+    .btn{cursor:pointer;user-select:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+      padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:linear-gradient(180deg,#24306b,#1a2452);
+      color:#fff;font-weight:800;letter-spacing:.2px;box-shadow:var(--shadow)}
+    .btn.alt{background:linear-gradient(180deg,#2a5fff,#2747d8)}
+    .btn.ghost{background:transparent}
+    .btn.block{width:100%}
+    .kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+    @media (max-width:1000px){.kpi{grid-template-columns:repeat(2,1fr)}}
+    .kpi .item{padding:14px;border-radius:14px;background:linear-gradient(180deg,#12193a,#0f1630);border:1px solid var(--line)}
+    .kpi .label{font-size:12px;color:var(--muted)}
+    .kpi .value{font-weight:800;font-size:20px;margin-top:4px}
+    .funds{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+    @media (max-width:1000px){.funds{grid-template-columns:repeat(2,1fr)}}
+    .fund{padding:12px;border:1px solid var(--line);border-radius:12px;background:linear-gradient(180deg,#10183c,#0f1737)}
+    .fund h3{margin:0 0 6px;font-size:14px}
+    .alloc{display:flex;gap:8px;align-items:center}
+    .pill{font-size:11px;border:1px solid var(--line);padding:2px 8px;border-radius:999px;color:var(--muted)}
+    .note{padding:10px 12px;border-left:3px solid var(--accent);background:#0e1430;border-radius:8px}
+    .caps{display:flex;gap:8px;flex-wrap:wrap}
+    .cap{padding:6px 10px;border-radius:999px;border:1px dashed var(--line);font-size:12px;color:var(--muted)}
+    .charts{display:grid;grid-template-columns:1fr 1.25fr;gap:16px;align-items:center}
+    @media (max-width:1000px){.charts{grid-template-columns:1fr}}
+    canvas{width:100%!important;height:auto!important}
+    #tspPie{height:420px!important}
+    #tspLine{height:460px!important}
+    #loanChart{height:460px!important}
+    /* Chart toolbars */
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:-6px 0 8px}
+    .btn.small{padding:6px 10px;font-weight:700;border-radius:10px}
+    .toggle{display:inline-flex;gap:8px;align-items:center;font-size:12px;color:var(--muted)}
+  </style>
+</head>
+<body>
+  <header class="wrap sticky">
+    <div class="card pad row space">
+      <div>
+        <h1>Mil‑Fi Planning Suite</h1>
+        <div class="sub">Thrift Savings Plan (TSP) • Career Starter Loan</div>
+      </div>
+      <div class="tabs" role="tablist" aria-label="Mil‑Fi Tools">
+        <button class="tab active" id="tab-tsp" aria-controls="panel-tsp" aria-selected="true">TSP Planner</button>
+        <button class="tab" id="tab-loan" aria-controls="panel-loan" aria-selected="false">Career Starter Loan</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap grid" style="gap:16px">
+    <!-- ========= TSP PANEL ========= -->
+    <section id="panel-tsp" class="card pad grid" style="gap:18px">
+      <div class="grid two">
+        <div class="grid two">
+          <div>
+            <label>Plan Type</label>
+            <select id="tsp_plan">
+              <option value="BRS" selected>Military BRS (auto 1% + up to 4% match)</option>
+              <option value="Legacy">Military Legacy (no match)</option>
+              <option value="CivFERS">Civ FERS (auto 1% + up to 4% match)</option>
+            </select>
+            <div class="hint">Match applies only to <strong>basic pay</strong> contributions.</div>
+          </div>
+          <div>
+            <label>Pay Frequency</label>
+            <select id="tsp_freq">
+              <option value="24">Semi‑monthly (24)</option>
+              <option value="26" selected>Bi‑weekly (26)</option>
+              <option value="12">Monthly (12)</option>
+            </select>
+          </div>
+          <div>
+            <label>Basic Pay per Period ($)</label>
+            <input id="tsp_pay" type="number" min="0" step="1" value="2500" />
+          </div>
+          <div>
+            <label>Your Contribution per Period ($)</label>
+            <input id="tsp_empPer" type="number" min="0" step="1" value="250" />
+            <div class="row space"><span class="hint">IRS limit enforced annually</span><span id="tsp_eff" class="hint">= 10.0% of basic pay</span></div>
+          </div>
+          <div>
+            <label>Annual Pay Raise (%)</label>
+            <input id="tsp_raise" type="number" min="0" step="0.1" value="2.5" />
+          </div>
+          <div>
+            <label>Years</label>
+            <input id="tsp_years" type="number" min="1" step="1" value="20" />
+          </div>
+          <div>
+            <label>Inflation for Real View (%)</label>
+            <input id="tsp_infl" type="number" min="0" step="0.1" value="2.5" />
+          </div>
+          <div>
+            <label>IRS Elective Deferral Limit ($)</label>
+            <input id="tsp_limit" type="number" step="500" value="23000" />
+          </div>
+          <div>
+            <label>Annual Admin/Fees (bps)</label>
+            <input id="tsp_fees" type="number" step="1" value="5" />
+            <div class="hint">TSP is ultra‑low cost; default ~0.05%.</div>
+          </div>
+          <div>
+            <label>Roth?</label>
+            <select id="tsp_roth">
+              <option value="true" selected>Roth</option>
+              <option value="false">Traditional</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid" style="gap:12px">
+          <div class="row" style="flex-wrap:wrap;gap:8px">
+            <button class="btn ghost" data-lifecycle="L2055">L2055</button>
+            <button class="btn ghost" data-lifecycle="L2045">L2045</button>
+            <button class="btn ghost" data-lifecycle="L2035">L2035</button>
+            <button class="btn ghost" data-lifecycle="L2025">L2025</button>
+            <button class="btn ghost" id="tsp_100G">100% G</button>
+            <button class="btn ghost" id="tsp_US">US‑heavy</button>
+          </div>
+          <div class="funds" id="tsp_fundGrid"></div>
+          <div class="row space">
+            <div class="caps">
+              <span class="cap">Allocation must total 100%</span>
+              <span class="cap">Edit exp. returns below</span>
+            </div>
+            <button class="btn" id="tsp_rebalance">Rebalance yearly ✓</button>
+          </div>
+          <div class="grid two">
+            <div>
+              <label>Expected Returns (%) — G</label><input id="tsp_r_G" type="number" step="0.1" value="3.0">
+            </div>
+            <div>
+              <label>F</label><input id="tsp_r_F" type="number" step="0.1" value="4.5">
+            </div>
+            <div>
+              <label>C</label><input id="tsp_r_C" type="number" step="0.1" value="7.5">
+            </div>
+            <div>
+              <label>S</label><input id="tsp_r_S" type="number" step="0.1" value="8.5">
+            </div>
+            <div>
+              <label>I</label><input id="tsp_r_I" type="number" step="0.1" value="7.0">
+            </div>
+          </div>
+          <div class="row" style="gap:8px">
+            <button class="btn alt" id="tsp_calc">Update Projection</button>
+            <button class="btn" id="tsp_save">Save</button>
+            <button class="btn ghost" id="tsp_load">Load</button>
+            <button class="btn ghost" id="tsp_export">Export JSON</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card pad">
+        <div class="kpi">
+          <div class="item"><div class="label">Your contrib (Yr‑1)</div><div class="value" id="tsp_kEmp">$—</div></div>
+          <div class="item"><div class="label">Auto+Match (Yr‑1)</div><div class="value" id="tsp_kMatch">$—</div></div>
+          <div class="item"><div class="label">Yr‑1 total</div><div class="value" id="tsp_kTot">$—</div></div>
+          <div class="item"><div class="label">Projected balance</div><div class="value" id="tsp_kBal">$—</div></div>
+        </div>
+      </div>
+
+      <div class="charts">
+        <div class="card pad">
+          <h2>Allocation</h2>
+          <canvas id="tspPie"></canvas>
+        </div>
+        <div class="card pad">
+          <h2>Projected Growth</h2>
+          <div class="toolbar">
+            <button class="btn small" id="tsp_resetZoom">Reset zoom</button>
+            <label class="toggle"><input type="checkbox" id="tsp_toggleReal" checked> Show real (today $)</label>
+          </div>
+          <canvas id="tspLine"></canvas>
+        </div>
+      </div>
+
+      <div class="note">
+        <strong>TSP Basics:</strong> G = gov. securities (principal guaranteed), F = U.S. bonds, C = S&P 500, S = U.S. mid/small (completion), I = international developed. BRS/FERS: 1% automatic + up to 4% match on first 5% of basic pay. Matching applies to basic‑pay deferrals only.
+      </div>
+    </section>
+
+    <!-- ========= CAREER STARTER LOAN PANEL (skeleton here; JS later in part 2) ========= -->
+    <section id="panel-loan" class="card pad grid" style="gap:18px; display:none">
+      <div class="grid two">
+        <div class="grid two">
+          <div><label>Loan Amount ($)</label><input id="loan_amt" type="number" value="25000"></div>
+          <div><label>APR (%)</label><input id="loan_apr" type="number" value="3"></div>
+          <div><label>Term (years)</label><input id="loan_term" type="number" value="5"></div>
+          <div><label>% of Loan Invested</label>
+            <input id="loan_pctInv" type="range" min="0" max="100" step="1" value="100" oninput="loan_pctOut.textContent=this.value+'%'"><div class="row space"><span class="hint">Initial invested principal</span><span id="loan_pctOut" class="hint">100%</span></div>
+          </div>
+          <div><label>Expected Annual Return (%)</label><input id="loan_ret" type="number" value="7"></div>
+          <div><label>Monthly Addl. Invest ($)</label><input id="loan_monthly" type="number" value="0"></div>
+          <div><label>Extra Loan Pay/Month ($)</label><input id="loan_extra" type="number" value="0"></div>
+        </div>
+        <div class="grid" style="gap:12px">
+          <div class="row" style="gap:8px">
+            <button class="btn alt" id="loan_run">Run Model</button>
+            <button class="btn" id="loan_save">Save</button>
+            <button class="btn ghost" id="loan_load">Load</button>
+          </div>
+          <div class="card pad">
+            <div class="kpi">
+              <div class="item"><div class="label">Monthly Payment</div><div class="value" id="loan_kPay">$—</div></div>
+              <div class="item"><div class="label">Total Paid</div><div class="value" id="loan_kTot">$—</div></div>
+              <div class="item"><div class="label">End Portfolio</div><div class="value" id="loan_kEnd">$—</div></div>
+              <div class="item"><div class="label">Net P/L</div><div class="value" id="loan_kPL">$—</div></div>
+            </div>
+            <div class="row" style="gap:14px;flex-wrap:wrap;margin-top:10px">
+              <span class="pill" id="loan_kCoC">CoC: —%</span>
+              <span class="pill" id="loan_kIRR">IRR (all CFs): —%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card pad">
+        <h2>Loan vs. Investment Over Time</h2>
+        <div class="toolbar">
+          <button class="btn small" id="loan_resetZoom">Reset zoom</button>
+        </div>
+        <canvas id="loanChart"></canvas>
+      </div>
+      <div class="note">
+        <strong>Idea:</strong> Borrow at low APR, invest a portion at higher expected return, and optionally add monthly contributions. We show full‑cashflow IRR (receive loan now, pay monthly, add investments, liquidate at end).
+      </div>
+    </section>
+  </main>
+
+  <script>
+  // ===== Tabs =====
+  const tabTSP = document.getElementById('tab-tsp');
+  const tabLoan = document.getElementById('tab-loan');
+  const panelTSP = document.getElementById('panel-tsp');
+  const panelLoan = document.getElementById('panel-loan');
+  function showTab(which){
+    const tspActive = which==='tsp';
+    tabTSP.classList.toggle('active', tspActive);
+    tabLoan.classList.toggle('active', !tspActive);
+    panelTSP.style.display = tspActive ? '' : 'none';
+    panelLoan.style.display = tspActive ? 'none' : '';
+    tabTSP.setAttribute('aria-selected', String(tspActive));
+    tabLoan.setAttribute('aria-selected', String(!tspActive));
+  }
+  tabTSP.onclick = ()=>showTab('tsp');
+  tabLoan.onclick = ()=>showTab('loan');
+
+  // ===== TSP Planner state & UI (calc engine continues in part 2) =====
+  const TSP = {
+    state:{
+      plan:'BRS', freq:26, pay:2500, empPer:250, raise:2.5, years:20, infl:2.5,
+      limit:23000, feesBps:5, rebalance:true,
+      alloc:{G:20,F:10,C:45,S:15,I:10},
+      exp:{G:3.0,F:4.5,C:7.5,S:8.5,I:7.0}
+    },
+    funds:[
+      {k:'G',desc:'Gov securities (principal guaranteed)'},
+      {k:'F',desc:'U.S. investment‑grade bonds'},
+      {k:'C',desc:'S&P 500 (large‑cap U.S.)'},
+      {k:'S',desc:'U.S. completion (mid/small)'},
+      {k:'I',desc:'International developed'}
+    ],
+  };
+  const $ = (id)=>document.getElementById(id);
+
+  // Build fund grid
+  const fundGrid = $('tsp_fundGrid');
+  function buildFundGrid(){
+    fundGrid.innerHTML = '';
+    TSP.funds.forEach(f=>{
+      const div = document.createElement('div');
+      div.className = 'fund';
+      div.innerHTML = `
+        <h3>${f.k} Fund</h3>
+        <div class="alloc">
+          <label style="min-width:64px">Target %</label>
+          <input type="range" min="0" max="100" step="1" value="${TSP.state.alloc[f.k]}" data-k="${f.k}" class="rng">
+          <input type="number" min="0" max="100" step="1" value="${TSP.state.alloc[f.k]}" data-k="${f.k}" class="num">
+        </div>
+        <div class="hint" style="margin-top:6px">${f.desc}</div>`;
+      fundGrid.appendChild(div);
+    });
+    hookAllocInputs();
+  }
+  function hookAllocInputs(){
+    fundGrid.querySelectorAll('.rng,.num').forEach(inp=>{
+      inp.oninput = (e)=>{
+        const k = e.target.dataset.k; const v = +e.target.value||0;
+        TSP.state.alloc[k] = v; syncPair(k,v); normalizeAlloc(); drawTspPie();
+      };
+    });
+  }
+  function syncPair(k,v){ fundGrid.querySelectorAll(`[data-k="${k}"]`).forEach(el=> el.value = v); }
+  function normalizeAlloc(){
+    ['G','F','C','S','I'].forEach(k=> TSP.state.alloc[k] = Math.max(0, +TSP.state.alloc[k]||0));
+    let sum = ['G','F','C','S','I'].reduce((a,k)=> a + TSP.state.alloc[k], 0);
+    if(sum===100) return;
+    const scale = sum>0 ? 100/sum : 0;
+    ['G','F','C','S','I'].forEach(k=> TSP.state.alloc[k] = Math.round(TSP.state.alloc[k]*scale));
+    let drift = 100 - (TSP.state.alloc.G+TSP.state.alloc.F+TSP.state.alloc.C+TSP.state.alloc.S+TSP.state.alloc.I);
+    const order = ['C','S','I','F','G'];
+    for(let i=0; drift!==0 && i<order.length; i++){
+      const k = order[i]; TSP.state.alloc[k] += (drift>0?1:-1);
+      drift = 100 - (TSP.state.alloc.G+TSP.state.alloc.F+TSP.state.alloc.C+TSP.state.alloc.S+TSP.state.alloc.I);
+    }
+    order.forEach(k=> syncPair(k, TSP.state.alloc[k]));
+  }
+
+  // Input bindings
+  $('tsp_plan').onchange = e=>{ TSP.state.plan = e.target.value; /* calc in part 2 */ };
+  $('tsp_freq').onchange = e=>{ TSP.state.freq = +e.target.value; };
+  $('tsp_pay').oninput = e=>{ TSP.state.pay = +e.target.value; updateEffPct(); };
+  $('tsp_empPer').oninput = e=>{ TSP.state.empPer = +e.target.value; updateEffPct(); };
+  $('tsp_raise').oninput = e=>{ TSP.state.raise = +e.target.value; };
+  $('tsp_years').oninput = e=>{ TSP.state.years = +e.target.value; };
+  $('tsp_infl').oninput = e=>{ TSP.state.infl = +e.target.value; if(window.tspLine) tspLine.update(); };
+  $('tsp_limit').oninput = e=>{ TSP.state.limit = +e.target.value; };
+  $('tsp_fees').oninput = e=>{ TSP.state.feesBps = +e.target.value; };
+  ;['G','F','C','S','I'].forEach(k=> document.getElementById('tsp_r_'+k).oninput = e=>{ TSP.state.exp[k] = +e.target.value; });
+  $('tsp_rebalance').onclick = ()=>{ TSP.state.rebalance = !TSP.state.rebalance; $('tsp_rebalance').textContent = TSP.state.rebalance? 'Rebalance yearly ✓' : 'No rebalancing'; };
+  document.querySelectorAll('[data-lifecycle]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const map={L2055:{G:5,F:5,C:50,S:25,I:15},L2045:{G:7,F:8,C:47,S:23,I:15},L2035:{G:12,F:13,C:42,S:18,I:15},L2025:{G:30,F:25,C:26,S:7,I:12}};
+      TSP.state.alloc = {...(map[btn.dataset.lifecycle]||map.L2045)}; buildFundGrid(); drawTspPie();
+    };
+  });
+
+  // Save/Load/Export (wires only; logic continues in part 2)
+  $('tsp_save').onclick = ()=>{ localStorage.setItem('milfi_tsp_combo', JSON.stringify(TSP.state)); alert('TSP saved'); };
+  $('tsp_load').onclick = ()=>{ const raw = localStorage.getItem('milfi_tsp_combo'); if(!raw) return alert('No save'); try{ const s=JSON.parse(raw); TSP.state={...TSP.state,...s}; repaintTsp(); }catch(e){ alert('Bad save'); } };
+  $('tsp_export').onclick = ()=>{ const blob=new Blob([JSON.stringify(TSP.state,null,2)],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='tsp_settings.json'; a.click(); URL.revokeObjectURL(url); };
+  $('tsp_calc').onclick = ()=>{/* compute in part 2 */};
+
+  function repaintTsp(){
+    $('tsp_plan').value=TSP.state.plan; $('tsp_freq').value=TSP.state.freq; $('tsp_pay').value=TSP.state.pay;
+    $('tsp_empPer').value=TSP.state.empPer; $('tsp_raise').value=TSP.state.raise; $('tsp_years').value=TSP.state.years;
+    $('tsp_infl').value=TSP.state.infl; $('tsp_limit').value=TSP.state.limit; $('tsp_fees').value=TSP.state.feesBps;
+    ;['G','F','C','S','I'].forEach(k=> document.getElementById('tsp_r_'+k).value = TSP.state.exp[k]);
+    buildFundGrid(); updateEffPct(); drawTspPie();
+  }
+  function updateEffPct(){
+    const pct = TSP.state.pay>0 ? (TSP.state.empPer/TSP.state.pay)*100 : 0;
+    const out = document.getElementById('tsp_eff'); if(out) out.textContent = `= ${pct.toFixed(1)}% of basic pay`;
+  }
+
+  // Charts — skeletons; datasets plug in on compute (part 2)
+  let tspPie, tspLine;
+  function drawTspPie(){
+    const ctx = document.getElementById('tspPie');
+    const data=[TSP.state.alloc.G,TSP.state.alloc.F,TSP.state.alloc.C,TSP.state.alloc.S,TSP.state.alloc.I];
+    const labels=['G','F','C','S','I'];
+    if(tspPie) tspPie.destroy();
+    tspPie=new Chart(ctx,{type:'doughnut',
+      data:{labels,datasets:[{data, borderWidth:0, cutout:'58%', borderRadius:6}]},
+      options:{plugins:{legend:{labels:{color:'#cfe0ff'}}, tooltip:{callbacks:{label:(c)=>`${c.label}: ${c.parsed}%`}}}}});
+  }
+  function initTspLine(){
+    const ctx=document.getElementById('tspLine');
+    if(tspLine) tspLine.destroy();
+    tspLine=new Chart(ctx,{type:'line', data:{labels:[], datasets:[
+      {label:'Nominal',data:[],tension:.25,pointRadius:0,fill:false},
+      {label:'Real (today $)',data:[],tension:.25,pointRadius:0,fill:true}
+    ]}, options:{interaction:{mode:'index',intersect:false}, plugins:{legend:{labels:{color:'#cfe0ff'}}, zoom:{zoom:{wheel:{enabled:true}, pinch:{enabled:true}, mode:'x'}, pan:{enabled:true, mode:'x'}}}, scales:{x:{ticks:{color:'#cfe0ff'}}, y:{ticks:{color:'#cfe0ff'}}}}});
+  }
+
+  // Boot the UI (data population & empty charts)
+  buildFundGrid(); updateEffPct(); drawTspPie(); initTspLine();
+  showTab('tsp');
+  // ===== CONTINUES IN PART 2: projection math, line updates, loan engine, helpers =====
+  </script>
+  <!-- Paste this <script> block right after PART 1's script or at the end of the body. -->
+<script>
+// ===================== PART 2: Projection math, charts wiring, loan engine =====================
+
+// Money formatters
+function money(n){return n.toLocaleString(undefined,{style:'currency',currency:'USD',maximumFractionDigits:0});}
+function moneyShort(n){const a=Math.abs(n);if(a>=1e9)return'$'+(n/1e9).toFixed(1)+'B';if(a>=1e6)return'$'+(n/1e6).toFixed(1)+'M';if(a>=1e3)return'$'+(n/1e3).toFixed(0)+'K';return money(n);}
+
+// Shorthands
+const $id=(x)=>document.getElementById(x);
+
+// ----- TSP: helpers -----
+function matchForPlan(plan, empPct){
+  if(plan==='BRS' || plan==='CivFERS'){
+    const auto1=0.01; const first3=Math.min(empPct,3); const next2=Math.min(Math.max(empPct-3,0),2);
+    let match=(first3*1 + next2*0.5)/100; // fraction of pay
+    return {auto1, match:Math.min(match,0.04)};
+  }
+  return {auto1:0, match:0};
+}
+function blendedReturn(){
+  const w=TSP.state.alloc, r=TSP.state.exp; // percent inputs
+  const gross=(w.G*r.G + w.F*r.F + w.C*r.C + w.S*r.S + w.I*r.I)/100; // %
+  const net=gross - TSP.state.feesBps/10000; // subtract bps
+  return Math.max(-0.5, net)/100; // as decimal, cap -50%/yr (safety)
+}
+
+// charts (pie already built in PART 1)
+let tspLine;
+function drawTspLine(proj){
+  const ctx=$id('tspLine');
+  const labels=proj.map(p=>'Year '+p.year);
+  const nominal=proj.map(p=>p.balance);
+  const inf=TSP.state.infl/100;
+  const real=proj.map((p,i)=> p.balance/Math.pow(1+inf,i+1));
+  if(tspLine) tspLine.destroy();
+  tspLine=new Chart(ctx,{type:'line',
+    data:{labels,datasets:[
+      {label:'Nominal',data:nominal,tension:.25,pointRadius:0,fill:false},
+      {label:'Real (today $)',data:real,tension:.25,pointRadius:0,fill:true}
+    ]},
+    options:{interaction:{mode:'index',intersect:false},
+      plugins:{legend:{labels:{color:'#cfe0ff'}},
+        tooltip:{callbacks:{label:(c)=>{const ds=c.dataset.data;const prev=c.dataIndex>0?+ds[c.dataIndex-1]:null;const d=prev!=null?` (Δ ${money(c.parsed.y-prev)})`:'';return `${c.dataset.label}: ${money(c.parsed.y)}${d}`;} }},
+        zoom:{zoom:{wheel:{enabled:true},pinch:{enabled:true},mode:'x'},pan:{enabled:true,mode:'x'}}
+      },
+      scales:{x:{ticks:{color:'#cfe0ff'}},y:{ticks:{color:'#cfe0ff',callback:(v)=>moneyShort(v)}}}
+    });
+  const realBox=$id('tsp_toggleReal'); if(realBox){tspLine.data.datasets[1].hidden=!realBox.checked; tspLine.update();}
+}
+
+// compute projection + KPIs
+function calcTsp(){
+  const N=TSP.state.years|0, periods=TSP.state.freq|0, pay0=+TSP.state.pay, limit=+TSP.state.limit;
+  const raise=TSP.state.raise/100; const r=blendedReturn();
+  const proj=[]; let bal=0; let salaryPer=pay0; let empPer=+TSP.state.empPer;
+  for(let y=1;y<=N;y++){
+    const empPct = salaryPer>0 ? (empPer/salaryPer)*100 : 0;
+    let empYear = empPer*periods; if(empYear>limit){empYear=limit; empPer=empYear/periods;}
+    const m=matchForPlan(TSP.state.plan, empPct);
+    const matchYear=(m.auto1+m.match)*(salaryPer*periods);
+    const total=empYear+matchYear;
+    const growth=(bal + total/2)*r; // mid-year growth approx
+    bal=Math.max(0, bal + total + growth);
+    proj.push({year:y,contribEmp:empYear,contribMatch:matchYear,contribTotal:total,balance:bal});
+    salaryPer*=(1+raise);
+  }
+  TSP.lastProj=proj;
+  const y1=proj[0]||{contribEmp:0,contribMatch:0,contribTotal:0};
+  $id('tsp_kEmp').textContent=money(y1.contribEmp);
+  $id('tsp_kMatch').textContent=money(y1.contribMatch);
+  $id('tsp_kTot').textContent=money(y1.contribTotal);
+  $id('tsp_kBal').textContent=money(proj.at(-1)?.balance||0);
+  drawTspPie(); drawTspLine(proj);
+}
+
+// reflect emp% helper
+function updateEff(){
+  const pct=TSP.state.pay>0?(TSP.state.empPer/TSP.state.pay)*100:0;
+  const out=$id('tsp_eff'); if(out) out.textContent=`= ${pct.toFixed(1)}% of basic pay`;
+}
+
+// Bind control helpers
+(function(){
+  const reset=$id('tsp_resetZoom'); if(reset) reset.onclick=()=>{ if(tspLine) tspLine.resetZoom(); };
+  const toggle=$id('tsp_toggleReal'); if(toggle) toggle.onchange=()=>{ if(tspLine){ tspLine.data.datasets[1].hidden=!toggle.checked; tspLine.update(); } };
+})();
+
+// Initial compute
+updateEff(); calcTsp();
+
+// ===================== Career Starter Loan =====================
+let loanChart;
+const fmt=(x)=>x.toLocaleString(undefined,{style:'currency',currency:'USD'});
+const ratePerMonth=(apr)=>(+apr/100)/12;
+const pmt=(pr,i,n)=>(i>0)? (pr*i)/(1-Math.pow(1+i,-n)) : pr/n;
+function irrBisection(cfs,guess=0.1){let lo=-0.9999,hi=10,mid=guess,iter=0;const npv=(r)=>cfs.reduce((a,c,t)=>a+c/Math.pow(1+r,t),0);let fLo=npv(lo),fHi=npv(hi);if(fLo*fHi>0)return NaN;while(iter++<200){mid=(lo+hi)/2;const fMid=npv(mid);if(Math.abs(fMid)<1e-6)return mid;if(fLo*fMid<0){hi=mid;fHi=fMid;}else{lo=mid;fLo=fMid;}}return mid;}
+
+function runLoan(){
+  const L=+$id('loan_amt').value||0, apr=+$id('loan_apr').value||0, term=Math.max(1, +$id('loan_term').value|0);
+  const pctInv=(+$id('loan_pctInv').value||0)/100, rInv=(+$id('loan_ret').value||0)/100/12;
+  const addl=+$id('loan_monthly').value||0, extra=+$id('loan_extra').value||0;
+  const n=term*12, i=ratePerMonth(apr), pay=pmt(L,i,n);
+  let remaining=L, portfolio=L*pctInv, totalPaid=0; const pts=[], cfs=[+L];
+  for(let m=1;m<=n;m++){
+    const interest=remaining*i; const principal=pay - interest + extra; remaining=Math.max(0,remaining - principal);
+    portfolio=(portfolio + addl) * (1 + rInv); totalPaid += (pay + extra);
+    pts.push({m,loan:remaining,inv:portfolio}); cfs.push(-(pay + extra + addl));
+  }
+  cfs[cfs.length-1] += portfolio; // liquidate
+  const netPL=portfolio - totalPaid; const invested=L*pctInv; const coc= invested>0 ? ((portfolio - invested)/invested)*100 : 0; const irr=irrBisection(cfs)*12*100;
+  $id('loan_kPay').textContent=fmt(pay);
+  $id('loan_kTot').textContent=fmt(totalPaid);
+  $id('loan_kEnd').textContent=fmt(portfolio);
+  $id('loan_kPL').textContent=(netPL>=0?'+ ':'')+fmt(netPL); $id('loan_kPL').style.color = netPL>=0 ? 'var(--good)' : 'var(--bad)';
+  $id('loan_kCoC').textContent=`CoC: ${isFinite(coc)?coc.toFixed(2):'—'}%`;
+  $id('loan_kIRR').textContent=`IRR (all CFs): ${isFinite(irr)?irr.toFixed(2):'—'}%`;
+
+  const ctx=$id('loanChart'); if(loanChart) loanChart.destroy();
+  loanChart=new Chart(ctx,{type:'line',
+    data:{labels:pts.map(p=>`Month ${p.m}`),
+      datasets:[
+        {label:'Remaining Loan', data:pts.map(p=>p.loan), borderColor:'#ff6b6b', fill:false, tension:.25, pointRadius:0},
+        {label:'Investment Value', data:pts.map(p=>p.inv), borderColor:'#24d39a', fill:false, tension:.25, pointRadius:0}
+      ]},
+    options:{interaction:{mode:'index',intersect:false},
+      plugins:{legend:{labels:{color:'#cfe0ff'}}, tooltip:{callbacks:{label:(c)=>`${c.dataset.label}: ${fmt(c.parsed.y)}`}},
+        zoom:{zoom:{wheel:{enabled:true},pinch:{enabled:true},mode:'x'},pan:{enabled:true,mode:'x'}}},
+      scales:{x:{ticks:{color:'#cfe0ff'}},y:{ticks:{color:'#cfe0ff',callback:(v)=>moneyShort(v)}}}
+    });
+}
+
+$id('loan_run').onclick=runLoan;
+$id('loan_save').onclick=()=>{const payload={amt:+$id('loan_amt').value,apr:+$id('loan_apr').value,term:+$id('loan_term').value,pct:+$id('loan_pctInv').value,ret:+$id('loan_ret').value,m:+$id('loan_monthly').value,extra:+$id('loan_extra').value};localStorage.setItem('milfi_loan_combo',JSON.stringify(payload));alert('Loan saved');};
+$id('loan_load').onclick=()=>{const raw=localStorage.getItem('milfi_loan_combo'); if(!raw) return alert('No save'); try{const s=JSON.parse(raw);$id('loan_amt').value=s.amt;$id('loan_apr').value=s.apr;$id('loan_term').value=s.term;$id('loan_pctInv').value=s.pct;loan_pctOut.textContent=s.pct+'%';$id('loan_ret').value=s.ret;$id('loan_monthly').value=s.m;$id('loan_extra').value=s.extra;runLoan();}catch(e){alert('Bad save');}};
+const loanReset=$id('loan_resetZoom'); if(loanReset){loanReset.onclick=()=>{if(loanChart) loanChart.resetZoom();}};
+
+// First paints
+calcTsp(); runLoan();
+showTab('tsp');
+</script>
+
+</body>
+</html>

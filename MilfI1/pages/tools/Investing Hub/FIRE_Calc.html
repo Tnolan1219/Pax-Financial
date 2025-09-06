@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MilFi — FIRE Calculator (Vertical Layout with Features)</title>
+  <style>
+    body{margin:0;font-family:system-ui;background:#0b1220;color:#e5e7eb}
+    .wrap{max-width:900px;margin:0 auto;padding:20px}
+    .card{background:#111827;border:1px solid #1f2a41;border-radius:12px;margin-bottom:20px;box-shadow:0 12px 40px rgba(0,0,0,.35)}
+    .card .head{padding:12px 16px;border-bottom:1px solid #1e293b;font-weight:800;background:rgba(255,255,255,.05)}
+    .card .body{padding:16px}
+    .row{display:flex;flex-wrap:wrap;gap:12px}
+    .field{flex:1;min-width:200px;display:grid;gap:4px}
+    .field input{padding:8px;border-radius:8px;border:1px solid #2f3b4e;background:#0a1324;color:#e5e7eb}
+    .btn{padding:8px 12px;border-radius:8px;background:#60a5fa;color:#0a0a0a;font-weight:700;border:none;cursor:pointer;margin-top:8px}
+    .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+    .kpi{background:#0f172a;border:1px solid #1f2a41;border-radius:8px;padding:10px;text-align:center}
+    .kpi .value{font-size:20px;font-weight:800}
+    .bar{height:12px;background:#0e1628;border:1px solid #1f2a41;border-radius:8px;overflow:hidden}
+    .bar span{display:block;height:100%;width:0;background:linear-gradient(90deg,#60a5fa,#7aa2ff)}
+    svg#growth{width:100%;height:320px;background:#0f1736;border-radius:12px;margin-top:12px}
+    table{width:100%;border-collapse:separate;border-spacing:0 8px;margin-top:10px}
+    th{font-size:12px;color:#b7c2ff;text-align:left}
+    td,th{padding:6px 8px}
+    tr{background:#0f1633;border:1px solid #26306a}
+    tr td:first-child,tr th:first-child{border-top-left-radius:8px;border-bottom-left-radius:8px}
+    tr td:last-child,tr th:last-child{border-top-right-radius:8px;border-bottom-right-radius:8px}
+    footer{margin-top:20px;color:#94a3b8;font-size:12px}
+  </style>
+  <a class="btn" href="/HOME PAGE CODE V3.html">Home</a>
+
+</head>
+<body>
+  <a href="Investing_Home.html" style="position:fixed;top:18px;left:18px;z-index:1000;text-decoration:none;"><button style="padding:8px 18px;border-radius:999px;background:#60a5fa;color:#0a0a0a;font-weight:700;border:none;box-shadow:0 2px 10px rgba(96,165,250,.13);cursor:pointer;">← Back</button></a>
+  <div class="wrap">
+    <h1>FIRE Calculator</h1>
+
+    <section class="card">
+      <div class="head">Inputs</div>
+      <div class="body">
+        <div class="row">
+          <div class="field"><label>Desired Annual Spending</label><input id="spend" type="number" value="48000"></div>
+          <div class="field"><label>Guaranteed Income at FI</label><input id="other" type="number" value="0"></div>
+          <div class="field"><label>Safe Withdrawal Rate (%)</label><input id="swr" type="number" value="4"></div>
+        </div>
+        <div class="row">
+          <div class="field"><label>Current Balance</label><input id="balance" type="number" value="15000"></div>
+          <div class="field"><label>Monthly Contribution</label><input id="contrib" type="number" value="800"></div>
+          <div class="field"><label>Expected Return (%)</label><input id="ret" type="number" value="7"></div>
+        </div>
+        <div class="row">
+          <div class="field"><label>Inflation (%)</label><input id="infl" type="number" value="2.5"></div>
+          <div class="field"><label>Current Age</label><input id="ageNow" type="number" value="26"></div>
+          <div class="field"><label>Goal Age</label><input id="ageGoal" type="number" value="40"></div>
+        </div>
+        <div class="row">
+          <button class="btn" id="calc">Calculate</button>
+          <button class="btn" id="save">Save Snapshot</button>
+          <button class="btn" id="reset">Reset</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="head">FI Numbers</div>
+      <div class="body">
+        <div class="kpis">
+          <div class="kpi"><div>Lean FI</div><div class="value" id="leanNum">$0</div><div id="leanTime">—</div></div>
+          <div class="kpi"><div>Base FI</div><div class="value" id="baseNum">$0</div><div id="baseTime">—</div></div>
+          <div class="kpi"><div>Freedom</div><div class="value" id="fatNum">$0</div><div id="fatTime">—</div></div>
+        </div>
+        <div style="margin-top:12px">
+          <label>Progress to Base FI</label>
+          <div class="bar"><span id="progBar"></span></div>
+          <div id="progNote">—</div>
+        </div>
+        <div style="margin-top:12px">
+          <label>Needed Monthly (to hit Base FI by Goal Age)</label>
+          <input id="needMonthly" readonly>
+        </div>
+        <svg id="growth"></svg>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="head">Year-by-Year (first 15 years)</div>
+      <div class="body">
+        <table><thead><tr><th>Year</th><th>Age</th><th>Start Bal</th><th>Contrib/yr</th><th>Growth</th><th>End Bal</th></tr></thead><tbody id="tableBody"></tbody></table>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="head">Saved Snapshots</div>
+      <div class="body" id="saved">No snapshots yet.</div>
+    </section>
+
+    <footer>Planning estimates only — not financial, tax, or legal advice. Confirm with official sources and licensed professionals.</footer>
+  </div>
+
+  <script>
+// ==== USAGE TRACKING (shared) ====
+function milfiGetUsage() {
+  const m = new Date().toISOString().slice(0,7);
+  let u = JSON.parse(localStorage.getItem('milfi_calc_usage')||'{}');
+  if(u.month !== m) u = {month:m, total:0};
+  return u;
+}
+function milfiIncUsage(limit=50) {
+  let u = milfiGetUsage();
+  if(u.total >= limit) return false;
+  u.total++;
+  localStorage.setItem('milfi_calc_usage', JSON.stringify(u));
+  return true;
+}
+function milfiCheckLimit(limit=50) {
+  let u = milfiGetUsage();
+  return u.total < limit;
+}
+
+    const $=id=>document.getElementById(id);
+    const fmt=new Intl.NumberFormat(undefined,{style:'currency',currency:'USD',maximumFractionDigits:0});
+
+    const STORE_KEY='milfi_fire_v2';
+
+    function realReturn(nom,infl){return ((1+nom/100)/(1+infl/100))-1;}
+    function fiNumber(spend,other,swr){return Math.max(0,spend-other)/(swr/100);}
+    function monthsToTarget(bal,mContrib,rAnnual,target,max=1200){const r=rAnnual/12;let s=[bal];for(let m=1;m<=max;m++){bal=bal*(1+r)+mContrib;s.push(bal);if(bal>=target)return{months:m,series:s};}return{months:Infinity,series:s};}
+
+    function draw(series,target){
+      const svg=$('growth');const w=800,h=320,pad=40;svg.setAttribute('viewBox',`0 0 ${w} ${h}`);
+      const maxY=Math.max(target*1.1,...series);svg.innerHTML=`<rect width='${w}' height='${h}' fill='transparent'/>`;
+      let d='';series.forEach((v,i)=>{const x=pad+(w-2*pad)*(i/(series.length-1));const y=h-pad-(h-2*pad)*(v/maxY);d+=(i?'L':'M')+x+','+y;});
+      svg.innerHTML+=`<path d='${d}' stroke='#7aa2ff' fill='none' stroke-width='2'/>`;
+      const yT=h-pad-(h-2*pad)*(target/maxY);svg.innerHTML+=`<line x1='${pad}' y1='${yT}' x2='${w-pad}' y2='${yT}' stroke='#34d399' stroke-dasharray='6 6'/>`;
+    }
+
+    function renderTable(startAge,series,yearlyContrib){
+      const tb=$('tableBody');tb.innerHTML='';
+      const years=Math.min(15,Math.floor((series.length-1)/12));
+      let balStart=series[0];
+      for(let y=1;y<=years;y++){
+        const end=series[y*12];const growth=end-balStart-yearlyContrib;
+        const tr=document.createElement('tr');
+        tr.innerHTML=`<td>${y}</td><td>${(startAge||0)+y}</td><td>${fmt.format(balStart)}</td><td>${fmt.format(yearlyContrib)}</td><td>${fmt.format(growth)}</td><td>${fmt.format(end)}</td>`;
+        tb.appendChild(tr);
+        balStart=end;
+      }
+    }
+
+    function calc(){
+      const spend=+$('spend').value,other=+$('other').value,swr=+$('swr').value;
+      const bal=+$('balance').value,mContrib=+$('contrib').value,ret=+$('ret').value,infl=+$('infl').value;
+      const ageNow=+$('ageNow').value,ageGoal=+$('ageGoal').value;
+      const base=fiNumber(spend,other,swr),lean=fiNumber(spend*0.9,other,swr),fat=fiNumber(spend*1.25,other,swr);
+      $('baseNum').textContent=fmt.format(base);
+      $('leanNum').textContent=fmt.format(lean);
+      $('fatNum').textContent=fmt.format(fat);
+      const r=realReturn(ret,infl);
+      const tBase=monthsToTarget(bal,mContrib,r,base);
+      function tStr(res){if(!isFinite(res.months))return'Not reached';const y=Math.floor(res.months/12),m=res.months%12;return`${y}y ${m}m`;} 
+      $('baseTime').textContent=tStr(tBase);
+      $('leanTime').textContent=tStr(monthsToTarget(bal,mContrib,r,lean));
+      $('fatTime').textContent=tStr(monthsToTarget(bal,mContrib,r,fat));
+      const pct=Math.min(100,(bal/base)*100);$('progBar').style.width=pct+'%';$('progNote').textContent=`${fmt.format(bal)} of ${fmt.format(base)} (${pct.toFixed(1)}%)`;
+      if(ageGoal&&ageNow){const need=(base-bal*Math.pow(1+r,(ageGoal-ageNow)*12))/(((Math.pow(1+r,(ageGoal-ageNow)*12))-1)/r*12);$('needMonthly').value=fmt.format(Math.max(0,need));}
+      draw(tBase.series,base);
+      renderTable(ageNow,tBase.series,mContrib*12);
+      const snap={spend,other,swr,bal,mContrib,ret,infl,ageNow,ageGoal,base,lean,fat,when:new Date().toISOString()};
+      localStorage.setItem(STORE_KEY,JSON.stringify(snap));
+    }
+
+    function saveSnapshot(){
+      const raw=localStorage.getItem(STORE_KEY);if(!raw){alert('Run a calculation first.');return;}
+      let list=[];try{list=JSON.parse(localStorage.getItem(STORE_KEY+'__list')||'[]');}catch(e){}
+      const data=JSON.parse(raw);list.push(data);
+      localStorage.setItem(STORE_KEY+'__list',JSON.stringify(list));renderSaved();
+    }
+
+    function renderSaved(){
+      let list=[];try{list=JSON.parse(localStorage.getItem(STORE_KEY+'__list')||'[]');}catch(e){}
+      const box=$('saved');if(!list.length){box.textContent='No snapshots yet.';return;}
+      box.innerHTML='';
+      list.slice().reverse().forEach((s,idx)=>{
+        const d=document.createElement('div');d.style.marginBottom='10px';d.style.padding='8px';d.style.background='rgba(255,255,255,.03)';d.style.border='1px solid #26306a';d.style.borderRadius='8px';
+        d.innerHTML=`<div><b>${new Date(s.when).toLocaleString()}</b></div>
+        <div class='small'>Base FI ${fmt.format(s.base)} | Lean ${fmt.format(s.lean)} | Freedom ${fmt.format(s.fat)}</div>
+        <button class='btn' data-load='${idx}'>Load</button>`;
+        box.appendChild(d);
+      });
+      box.querySelectorAll('[data-load]').forEach(b=>b.addEventListener('click',()=>loadSnapshot(+b.dataset.load)));
+    }
+
+    function loadSnapshot(i){
+      let list=[];try{list=JSON.parse(localStorage.getItem(STORE_KEY+'__list')||'[]');}catch(e){}
+      const s=list[i];if(!s)return;
+      $('spend').value=s.spend;$('other').value=s.other;$('swr').value=s.swr;$('balance').value=s.bal;$('contrib').value=s.mContrib;$('ret').value=s.ret;$('infl').value=s.infl;$('ageNow').value=s.ageNow;$('ageGoal').value=s.ageGoal;
+      calc();
+    }
+
+    $('calc').addEventListener('click',function(){
+      if(!milfiCheckLimit(50)) {
+        alert('Monthly usage reached, upgrade to pro?');
+        return;
+      }
+      milfiIncUsage(50);
+      calc();
+    });
+    $('save').addEventListener('click',saveSnapshot);
+    $('reset').addEventListener('click',()=>{ $('spend').value=48000;$('other').value=0;$('swr').value=4;$('balance').value=15000;$('contrib').value=800;$('ret').value=7;$('infl').value=2.5;$('ageNow').value=26;$('ageGoal').value=40;calc(); });
+
+    renderSaved();calc();
+  </script>
+</body>
+</html>

@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mil‑Fi | Personal Finance Dashboard</title>
+  <!-- Charts (optional). If blocked by the environment, the page will gracefully degrade. -->
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root{
+      --bg:#0b1020; --panel:#111831; --panel-2:#0e152b; --muted:#a8b3d9; --text:#e8ecff; --accent:#7aa2ff;
+      --accent-2:#3ddc97; --bad:#ff6b6b; --warn:#f4a261; --grid:#1a2244; --chip:#1d2547; --shadow:0 10px 30px rgba(0,0,0,.35); --radius:18px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;background:radial-gradient(1200px 600px at 80% -10%, #172045 0%, transparent 60%),var(--bg);color:var(--text)}
+    a{color:var(--accent);text-decoration:none}
+    header{position:sticky;top:0;z-index:10;background:linear-gradient(180deg,var(--panel-2),rgba(14,21,43,.9));border-bottom:1px solid #1b244a;backdrop-filter:blur(6px)}
+    .nav{max-width:1200px;margin:0 auto;display:flex;gap:16px;align-items:center;justify-content:space-between;padding:14px 18px}
+    .brand{display:flex;gap:10px;align-items:center}
+    .brand .logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#9fb8ff);box-shadow:0 6px 18px rgba(122,162,255,.5)}
+    .brand h1{font-size:18px;margin:0;font-weight:700;letter-spacing:.4px}
+    .links{display:flex;gap:14px;flex-wrap:wrap}
+    .links a{padding:8px 12px;border:1px solid #1e2a58;border-radius:12px;background:rgba(255,255,255,.02)}
+
+    main{max-width:1200px;margin:24px auto;padding:0 18px 28px}
+    .grid{display:grid;grid-template-columns:280px 1fr;gap:22px}
+    @media (max-width:980px){.grid{grid-template-columns:1fr}}
+
+    .card{background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));border:1px solid #1b244a;border-radius:var(--radius);box-shadow:var(--shadow)}
+    .card h2{font-size:16px;margin:0 0 8px;color:#dfe6ff}
+    .card .body{padding:16px}
+    .section-head{display:flex;align-items:center;justify-content:space-between;padding:16px}
+    .section-head h3{margin:0;font-size:15px}
+
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap}
+    .btn{cursor:pointer;border:1px solid #263169;background:linear-gradient(180deg,#1a2350,#141b3a);padding:10px 12px;border-radius:12px;color:#e6ecff}
+    .btn.secondary{background:#121938}
+    .btn.ghost{background:transparent}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    .chip{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:var(--chip);border:1px solid #1e2a58;color:#d6ddff;font-size:12px}
+
+    /* Sidebar */
+    .sidebar .body{display:flex;flex-direction:column;gap:14px}
+    .source{padding:12px;border-radius:14px;background:rgba(255,255,255,.03);border:1px dashed #273468}
+    .source h3{margin:0 0 6px;font-size:13px;color:#c9d6ff}
+    .source small{color:var(--muted)}
+    details.schema{background:rgba(255,255,255,.03);border:1px solid #1b244a;padding:10px;border-radius:12px}
+    details.schema summary{cursor:pointer;color:#c9d6ff}
+    pre{white-space:pre-wrap;background:#0a1126;padding:10px;border-radius:12px;border:1px solid #1b244a;max-height:240px;overflow:auto}
+    input[type="file"]{display:none}
+
+    /* KPI cards */
+    .kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:16px}
+    @media (max-width:1200px){.kpis{grid-template-columns:repeat(3,1fr)}}
+    @media (max-width:740px){.kpis{grid-template-columns:repeat(2,1fr)}}
+    .kpi{padding:16px;border-radius:16px;border:1px solid #1b244a;background:linear-gradient(180deg,#121a38,#0f1731)}
+    .kpi h4{margin:0 0 10px;color:#cfd8ff;font-weight:600;font-size:12px;letter-spacing:.6px;text-transform:uppercase}
+    .kpi .value{font-size:24px;font-weight:800}
+    .kpi .sub{color:var(--muted);font-size:12px;margin-top:6px}
+    .good{color:var(--accent-2)} .bad{color:var(--bad)} .warn{color:var(--warn)}
+
+    /* Charts & tables */
+    .chart-wrap{padding:8px 16px 16px}
+    canvas{width:100%;max-height:340px}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px;border-bottom:1px solid #1b244a}
+    th{text-align:left;color:#c9d6ff;font-weight:600}
+    tbody tr:hover{background:rgba(255,255,255,.02)}
+
+    /* Diagnostics */
+    .diag-ok{color:#9bf6b2}
+    .diag-bad{color:#ff9b9b}
+
+    footer{margin:28px auto 0;max-width:1200px;padding:14px 18px 28px;color:var(--muted)}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="nav">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <h1>Mil‑Fi Dashboard</h1>
+      </div>
+      <nav class="links">
+        <a href="index.html">Home</a>
+        <a href="milfi_toolkit.html">Toolkit</a>
+        <a href="learn.html">Knowledge</a>
+        <a href="faq.html">FAQ</a>
+        <a href="contact.html">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="grid">
+      <!-- SIDEBAR: Data Sources & Actions -->
+      <aside class="sidebar">
+        <div class="card">
+          <div class="body">
+            <h2>Data & Integrations</h2>
+            <div class="toolbar">
+              <button class="btn" id="btn-sync">Sync from LocalStorage</button>
+              <button class="btn secondary" id="btn-demo">Load Demo Data</button>
+              <button class="btn ghost" id="btn-diagnostics">Run Diagnostics</button>
+            </div>
+
+            <div class="source">
+              <h3>Snapshot</h3>
+              <div class="toolbar">
+                <label class="btn ghost" for="file-load">Load .json</label>
+                <input id="file-load" type="file" accept="application/json" />
+                <button class="btn ghost" id="btn-save">Save .json</button>
+              </div>
+              <small>Use these to export/import your combined dashboard data.</small>
+            </div>
+
+            <div class="source">
+              <h3>Connect pages</h3>
+              <small>Other pages (Budget, FIRE, TSP) can push data here by calling <code>window.milfiRegisterData(module, data)</code> or by writing to LocalStorage keys shown below.</small>
+              <ul style="margin:10px 0 0 18px; padding:0; line-height:1.6">
+                <li><code>MILFI_budget</code> — Budget & spending</li>
+                <li><code>MILFI_cashflow</code> — Monthly cash in/out</li>
+                <li><code>MILFI_networth</code> — Net worth history</li>
+                <li><code>MILFI_investments</code> — Holdings & allocation</li>
+                <li><code>MILFI_tsp</code> — TSP balances & allocation</li>
+                <li><code>MILFI_fire</code> — FIRE goals & assumptions</li>
+                <li><code>MILFI_debts</code> — Debt accounts & payments</li>
+              </ul>
+            </div>
+
+            <details class="schema">
+              <summary>View JSON schema (copy for your tools)</summary>
+<pre>{
+  "budget": {
+    "categories": [{"name":"Housing","amount":1400},{"name":"Food","amount":500}],
+    "month": "2025-09",
+    "totalIncome": 4200,
+    "totalExpenses": 2600
+  },
+  "cashflow": [{"month":"2025-06","income":4200,"expenses":2500,"investing":800}],
+  "netWorthHistory": [{"date":"2025-01-01","value":25000}],
+  "investments": {
+    "holdings": [{"symbol":"VTI","value":12000},{"symbol":"BND","value":3000}],
+    "allocation": {"US Stocks": 70, "Bonds": 20, "Intl": 10},
+    "ytdReturnPct": 8.2
+  },
+  "tsp": {
+    "balance": 9800,
+    "allocationPct": {"G": 10, "F": 10, "C": 50, "S": 20, "I": 10}
+  },
+  "fire": {
+    "desiredMonthlyIncome": 3500,
+    "swr": 0.04,
+    "currentInvested": 45000,
+    "monthlyInvest": 1200,
+    "years": 20,
+    "returnBase": 0.07,
+    "returnLow": 0.04,
+    "returnHigh": 0.10,
+    "inflation": 0.025
+  },
+  "debts": [{"name":"Auto Loan","balance":12000,"rate":0.06,"minPayment":320}]
+}</pre>
+            </details>
+
+            <div id="diag" class="source" style="display:none">
+              <h3>Diagnostics</h3>
+              <div id="diag-out" style="font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:12px; line-height:1.5"></div>
+            </div>
+
+            <div class="chip">Status: <span id="status">Waiting for data…</span></div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- MAIN: KPIs + Charts -->
+      <section>
+        <!-- KPIs -->
+        <div class="kpis">
+          <div class="kpi"><h4>Net Worth</h4><div class="value" id="kpi-networth">$—</div><div class="sub" id="kpi-nw-change">—</div></div>
+          <div class="kpi"><h4>Cash Flow (This Mo.)</h4><div class="value" id="kpi-cf">$—</div><div class="sub" id="kpi-cf-rate">—</div></div>
+          <div class="kpi"><h4>Savings Rate</h4><div class="value" id="kpi-sr">—</div><div class="sub">Target ≥ 20%</div></div>
+          <div class="kpi"><h4>TSP Balance</h4><div class="value" id="kpi-tsp">$—</div><div class="sub" id="kpi-tsp-alloc">—</div></div>
+          <div class="kpi"><h4>FIRE Progress</h4><div class="value" id="kpi-fire">—</div><div class="sub" id="kpi-fire-target">—</div></div>
+          <div class="kpi"><h4>Debt‑to‑Income</h4><div class="value" id="kpi-dti">—</div><div class="sub">Target ≤ 36%</div></div>
+        </div>
+
+        <!-- Net Worth Trend -->
+        <div class="card" style="margin-top:18px">
+          <div class="section-head"><h3>Net Worth Over Time</h3>
+            <div class="toolbar">
+              <button class="btn ghost" id="btn-add-nw">+ Add latest</button>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="chartNetWorth" height="320"></canvas></div>
+        </div>
+
+        <!-- Cash Flow -->
+        <div class="card">
+          <div class="section-head"><h3>Cash Flow (Income vs. Expenses vs. Investing)</h3></div>
+          <div class="chart-wrap"><canvas id="chartCashflow" height="320"></canvas></div>
+          <div class="body">
+            <table id="table-cashflow"></table>
+          </div>
+        </div>
+
+        <!-- Spending Breakdown / Allocation -->
+        <div class="card">
+          <div class="section-head"><h3>Spending Breakdown & Portfolio Allocation</h3></div>
+          <div class="chart-wrap" style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+            <canvas id="chartSpending" height="300"></canvas>
+            <canvas id="chartAllocation" height="300"></canvas>
+          </div>
+        </div>
+
+        <!-- FIRE Projection -->
+        <div class="card">
+          <div class="section-head"><h3>FIRE Projection (Low / Base / High)</h3></div>
+          <div class="chart-wrap"><canvas id="chartFire" height="340"></canvas></div>
+        </div>
+
+        <!-- Debts Table -->
+        <div class="card">
+          <div class="section-head"><h3>Debts</h3></div>
+          <div class="body">
+            <table id="table-debts"></table>
+          </div>
+        </div>
+
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    <div class="card" style="border-radius:14px">
+      <div class="body">
+        <strong>Tips:</strong> Use your existing pages (Budget, FIRE, TSP) to generate data. Each tool can call <code>window.milfiRegisterData(module, data)</code> or save to LocalStorage (keys shown above).
+        This dashboard merges everything and keeps it in <em>one place</em>. None of your data leaves your browser.
+        <div style="margin-top:10px">Links: <a href="disclaimer.html">Disclaimer</a> • <a href="about.html">About</a> • <a href="newsletter.html">Newsletter</a></div>
+      </div>
+    </div>
+  </footer>
+
+<script>
+(function(){
+  // =====================
+  // Defensive Utilities
+  // =====================
+  const $ = (sel, root=document) => root.querySelector(sel);
+  const fmt = new Intl.NumberFormat('en-US', {style:'currency', currency:'USD', maximumFractionDigits:0});
+  const pct = (n) => (isFinite(n)? (n*100).toFixed(0)+'%':'—');
+  const by = (k) => (a,b)=> (a[k]>b[k]?1:-1);
+  const setStatus = (msg) => { const el=$('#status'); if(el) el.textContent=msg };
+
+  // Safe localStorage wrapper (falls back to in-memory Map if blocked or unavailable)
+  const storage = (()=>{
+    let available = true; const mem = new Map();
+    try{ const t='__milfi_test__'; window.localStorage.setItem(t,'1'); window.localStorage.removeItem(t); }
+    catch(err){ available = false; }
+    function getItem(k){ try{ return available? window.localStorage.getItem(k) : (mem.has(k)? mem.get(k) : null) }catch(e){ return null } }
+    function setItem(k,v){ try{ if(available) window.localStorage.setItem(k,v); else mem.set(k,v); return true }catch(e){ console.warn('Storage set failed', e); return false } }
+    return {available,getItem,setItem};
+  })();
+
+  // Capture and surface errors nicely (helps avoid opaque "Script error.")
+  window.addEventListener('error', (e)=>{
+    setStatus('Error: '+(e?.message||'Unknown error')); console.error('[Mil‑Fi] window.error', e?.error||e);
+  });
+  window.addEventListener('unhandledrejection', (e)=>{
+    setStatus('Runtime error (promise): '+(e?.reason?.message||e?.reason||'unknown')); console.error('[Mil‑Fi] unhandledrejection', e?.reason);
+  });
+
+  // Global state (robust to partial data)
+  const state = { budget:null, cashflow:[], netWorthHistory:[], investments:null, tsp:null, fire:null, debts:[] };
+
+  // Integration surface
+  try{
+    window.milfiRegisterData = function(module, data){
+      const next = ingestModule(module, data);
+      if (!next){ console.warn('[Mil‑Fi] Unknown module', module); return }
+      storage.setItem('MILFI_'+module.toLowerCase(), JSON.stringify(next));
+      renderAll(); setStatus('Live data received: '+module);
+    }
+  }catch(err){ console.warn('[Mil‑Fi] Could not attach milfiRegisterData', err) }
+
+  function ingestModule(module, data){
+    if (!data) return null;
+    switch(module){
+      case 'budget': state.budget = data; return state.budget;
+      case 'cashflow': state.cashflow = Array.isArray(data)? data : []; return state.cashflow;
+      case 'netWorthHistory': state.netWorthHistory = Array.isArray(data)? data : []; return state.netWorthHistory;
+      case 'investments': state.investments = data; return state.investments;
+      case 'tsp': state.tsp = data; return state.tsp;
+      case 'fire': state.fire = data; return state.fire;
+      case 'debts': state.debts = Array.isArray(data)? data : []; return state.debts;
+      default: return null;
+    }
+  }
+  function ingestAll(data){ if (!data || typeof data!== 'object') return; for (const key of Object.keys(state)){ if (key in data) ingestModule(key, data[key]); } }
+
+  function pullFromLocalStorage(){
+    const keys = ['budget','cashflow','networth','investments','tsp','fire','debts'];
+    let found = 0;
+    for (const k of keys){
+      try{
+        const raw = storage.getItem('MILFI_'+k);
+        if (!raw) continue;
+        try{
+          const data = JSON.parse(raw);
+          if (k==='networth') ingestModule('netWorthHistory', data); else ingestModule(k, data);
+          found++;
+        }catch(parseErr){ console.warn('[Mil‑Fi] Ignoring corrupt JSON for', k, parseErr); }
+      }catch(e){ console.warn('[Mil‑Fi] Storage read failed for', k, e); }
+    }
+    if (found>0) setStatus('Loaded from storage ('+found+' module'+(found>1?'s':'')+')');
+    else setStatus(storage.available? 'No saved data found — using demo data.' : 'Storage unavailable — using in‑memory data.');
+  }
+
+  // Demo data (only if nothing connected)
+  function loadDemo(){
+    const today = new Date();
+    const monthsBack = 12; const networth = []; let base = 18000;
+    for(let i=monthsBack;i>=0;i--){ const d=new Date(today.getFullYear(), today.getMonth()-i, 1); base += 600 + Math.random()*800; networth.push({date:d.toISOString().slice(0,10), value:Math.round(base)}); }
+    const ym = (n)=> new Date(today.getFullYear(), today.getMonth()-n, 1).toISOString().slice(0,7);
+    const demo = {
+      budget: { month: today.toISOString().slice(0,7), totalIncome: 4800, totalExpenses: 2950, categories:[
+        {name:'Housing', amount:1400}, {name:'Food', amount:600}, {name:'Transport', amount:300}, {name:'Utilities', amount:250}, {name:'Fun', amount:200}, {name:'Other', amount:200}
+      ]},
+      cashflow: [0,1,2,3,4,5].map(n=>({month: ym(n), income: 4800, expenses: 2800 + (Math.random()*400|0), investing: 900 + (Math.random()*200|0)})),
+      netWorthHistory: networth,
+      investments: {holdings:[{symbol:'VTI', value:15000},{symbol:'VXUS', value:3500},{symbol:'BND', value:4200}], allocation:{'US Stocks':68,'Intl':17,'Bonds':15}, ytdReturnPct: 7.9},
+      tsp: {balance: 10400, allocationPct:{G:10,F:10,C:50,S:20,I:10}},
+      fire: {desiredMonthlyIncome: 3500, swr: .04, currentInvested: 45000, monthlyInvest: 1200, years: 20, returnBase:.07, returnLow:.04, returnHigh:.10, inflation:.025},
+      debts: [{name:'Auto Loan', balance: 11200, rate:.055, minPayment: 320}, {name:'Student Loan', balance: 6500, rate:.045, minPayment: 80}]
+    };
+    ingestAll(demo);
+  }
+
+  // Derived metrics
+  function computeKPIs(){
+    const nw = (state.netWorthHistory?.slice(-1)[0]?.value) ?? 0;
+    const prevNW = (state.netWorthHistory?.slice(-2, -1)[0]?.value) ?? nw;
+    const nwChange = nw - prevNW;
+
+    const latestCF = state.cashflow?.slice(-1)[0];
+    const cashIn = latestCF?.income ?? (state.budget?.totalIncome ?? 0);
+    const cashOut = latestCF?.expenses ?? (state.budget?.totalExpenses ?? 0);
+    const invest = latestCF?.investing ?? 0;
+    const cashFlow = cashIn - cashOut - invest;
+    const savingsRate = cashIn ? ((cashIn - cashOut)/cashIn) : 0;
+
+    const tspBal = state.tsp?.balance ?? 0;
+    const tspAlloc = state.tsp?.allocationPct ? Object.entries(state.tsp.allocationPct).map(([k,v])=>`${k}:${v}%`).join(' • ') : '—';
+
+    const monthly = state.fire?.desiredMonthlyIncome ?? 0;
+    const swr = state.fire?.swr ?? 0.04;
+    const targetNestEgg = monthly ? (monthly*12)/swr : 0;
+    const investedNow = (state.fire?.currentInvested ?? 0) + tspBal + (state.investments?.holdings?.reduce((s,h)=>s+(h.value||0),0) ?? 0);
+    const fireProgress = targetNestEgg? investedNow/targetNestEgg : 0;
+
+    const monthlyDebtPayments = (Array.isArray(state.debts)?state.debts:[]).reduce((s,d)=> s + (d.minPayment||0), 0);
+    const dti = cashIn? (monthlyDebtPayments / cashIn) : 0;
+
+    return {nw, nwChange, cashFlow, cashIn, cashOut, invest, savingsRate, tspBal, tspAlloc, targetNestEgg, investedNow, fireProgress, dti};
+  }
+
+  // Charts (safe)
+  let chNW=null, chCF=null, chSpend=null, chAlloc=null, chFire=null;
+  function ensureChart(canvasEl, config, prev){
+    if (!canvasEl) return null; // canvas missing; skip
+    if (!window.Chart){ console.warn('[Mil‑Fi] Chart.js not loaded; skipping chart'); return null }
+    try{ if (prev && typeof prev.destroy==='function') prev.destroy(); return new Chart(canvasEl, config); }
+    catch(err){ console.error('[Mil‑Fi] Chart render error', err); setStatus('Chart render error'); return null }
+  }
+
+  function renderKPIs(){
+    const {nw, nwChange, cashFlow, cashIn, cashOut, invest, savingsRate, tspBal, tspAlloc, targetNestEgg, investedNow, fireProgress, dti} = computeKPIs();
+    $('#kpi-networth').textContent = fmt.format(nw);
+    $('#kpi-nw-change').innerHTML = `<span class="${nwChange>=0?'good':'bad'}">${nwChange>=0?'+':''}${fmt.format(nwChange)}</span> vs last`;
+    $('#kpi-cf').textContent = fmt.format(cashFlow);
+    $('#kpi-cf-rate').innerHTML = `Income ${fmt.format(cashIn)} • Expenses ${fmt.format(cashOut)} • Invest ${fmt.format(invest)}`;
+    $('#kpi-sr').innerHTML = `<span class="${savingsRate>=.2?'good':(savingsRate>=.1?'warn':'bad')}">${pct(savingsRate)}</span>`;
+    $('#kpi-tsp').textContent = fmt.format(tspBal);
+    $('#kpi-tsp-alloc').textContent = tspAlloc;
+    $('#kpi-fire').innerHTML = `<span class="${fireProgress>=.5?'good':(fireProgress>=.25?'warn':'')}">${pct(fireProgress)}</span>`;
+    $('#kpi-fire-target').textContent = `Target ${fmt.format(targetNestEgg)} (at ${((state.fire?.swr ?? .04)*100).toFixed(1)}% SWR)`;
+    $('#kpi-dti').innerHTML = `<span class="${dti<=.36?'good':(dti<=.45?'warn':'bad')}">${pct(dti)}</span>`;
+  }
+
+  function renderNetWorth(){
+    const labels = (state.netWorthHistory||[]).map(d=>d.date);
+    const data = (state.netWorthHistory||[]).map(d=>d.value);
+    chNW = ensureChart($('#chartNetWorth'), {
+      type:'line', data:{labels, datasets:[{label:'Net Worth', data, tension:.3, borderWidth:2, fill:false}]},
+      options:{responsive:true, plugins:{legend:{display:false}, tooltip:{callbacks:{label:(c)=> fmt.format(c.parsed.y)}}}, scales:{x:{grid:{color:'rgba(255,255,255,.05)'}}, y:{grid:{color:'rgba(255,255,255,.05)'}, ticks:{callback:(v)=>'$'+v}}}}
+    }, chNW);
+  }
+
+  function renderCashflow(){
+    const items = (state.cashflow||[]).slice(-12);
+    const labels = items.map(r=>r.month);
+    const income = items.map(r=>r.income||0);
+    const exp = items.map(r=>r.expenses||0);
+    const inv = items.map(r=>r.investing||0);
+    chCF = ensureChart($('#chartCashflow'), {
+      type:'bar', data:{labels, datasets:[
+        {label:'Income', data:income, stack:'cf'},
+        {label:'Expenses', data:exp, stack:'cf'},
+        {label:'Investing', data:inv, stack:'cf'}
+      ]}, options:{responsive:true, plugins:{legend:{position:'top'}, tooltip:{callbacks:{label:(c)=>`${c.dataset.label}: ${fmt.format(c.parsed.y)}`}}}, scales:{x:{stacked:true, grid:{color:'rgba(255,255,255,.05)'}}, y:{stacked:true, grid:{color:'rgba(255,255,255,.05)'}}}}
+    }, chCF);
+
+    const tbl = $('#table-cashflow');
+    tbl.innerHTML = '<thead><tr><th>Month</th><th>Income</th><th>Expenses</th><th>Investing</th><th>Cash Flow</th></tr></thead>'+
+      items.map(r=>`<tr><td>${r.month}</td><td>${fmt.format(r.income||0)}</td><td>${fmt.format(r.expenses||0)}</td><td>${fmt.format(r.investing||0)}</td><td>${fmt.format((r.income||0)-(r.expenses||0)-(r.investing||0))}</td></tr>`).join('');
+  }
+
+  function renderSpending(){
+    const cats = state.budget?.categories || [];
+    const labels = cats.map(c=>c.name);
+    const data = cats.map(c=>c.amount);
+    chSpend = ensureChart($('#chartSpending'), { type:'doughnut', data:{labels, datasets:[{data}]}, options:{plugins:{legend:{position:'right'}, tooltip:{callbacks:{label:(c)=>`${c.label}: ${fmt.format(c.parsed)}`}}}} }, chSpend);
+  }
+
+  function renderAllocation(){
+    const alloc = state.investments?.allocation || state.tsp?.allocationPct || {};
+    const labels = Object.keys(alloc);
+    const data = Object.values(alloc);
+    chAlloc = ensureChart($('#chartAllocation'), { type:'doughnut', data:{labels, datasets:[{data}]}, options:{plugins:{legend:{position:'right'}}}}, chAlloc);
+  }
+
+  function compoundFV(PV, PMT, r, n){ const i = r/12; const fvLump = PV*Math.pow(1+i,n); const fvSeries = i===0 ? PMT*n : PMT*((Math.pow(1+i,n)-1)/i); return fvLump + fvSeries }
+  function renderFire(){
+    const f = state.fire || {}; const months = (f.years? f.years*12 : 360); const step = 12;
+    const points = Array.from({length: Math.floor(months/step)+1}, (_,k)=>k*step);
+    const labels = points.map(m=> `Y${Math.round(m/12)}`);
+    const PV = f.currentInvested||0, PMT = f.monthlyInvest||0;
+    const low = points.map(m=> Math.round(compoundFV(PV, PMT, f.returnLow||.04, m)) );
+    const base = points.map(m=> Math.round(compoundFV(PV, PMT, f.returnBase||.07, m)) );
+    const high = points.map(m=> Math.round(compoundFV(PV, PMT, f.returnHigh||.10, m)) );
+    const targetNominal = (f.desiredMonthlyIncome||0) * 12 / (f.swr||.04);
+    const inflation = f.inflation||.025;
+    const targetRealToNominal = points.map(m=> Math.round(targetNominal * Math.pow(1+inflation, m/12)) );
+    chFire = ensureChart($('#chartFire'), { type:'line', data:{labels, datasets:[
+      {label:'Low', data:low, borderWidth:2, tension:.25},
+      {label:'Base', data:base, borderWidth:2, tension:.25},
+      {label:'High', data:high, borderWidth:2, tension:.25},
+      {label:'Target (inflation‑adj)', data:targetRealToNominal, borderDash:[6,6], borderWidth:2, tension:0}
+    ]}, options:{plugins:{legend:{position:'top'}, tooltip:{callbacks:{label:(c)=> `${c.dataset.label}: ${fmt.format(c.parsed.y)}`}}}, scales:{x:{grid:{color:'rgba(255,255,255,.05)'}}, y:{grid:{color:'rgba(255,255,255,.05)'}}}} }, chFire);
+  }
+
+  function renderDebts(){
+    const rows = (Array.isArray(state.debts)?state.debts:[]).slice().sort(by('rate')).map(d=>{
+      const apr = (d.rate||0)*100;
+      return `<tr><td>${d.name||'-'}</td><td>${fmt.format(d.balance||0)}</td><td>${apr.toFixed(2)}%</td><td>${fmt.format(d.minPayment||0)}</td></tr>`
+    }).join('');
+    $('#table-debts').innerHTML = '<thead><tr><th>Debt</th><th>Balance</th><th>APR</th><th>Min Payment</th></tr></thead>'+rows;
+  }
+
+  function renderAll(){
+    renderKPIs();
+    renderNetWorth();
+    renderCashflow();
+    renderSpending();
+    renderAllocation();
+    renderFire();
+    renderDebts();
+  }
+
+  // --------------
+  // Diagnostics UI
+  // --------------
+  function runDiagnostics(){
+    const out = [];
+    // Test 1: storage availability
+    out.push({name:'localStorage available', pass: storage.available, note: storage.available? 'OK' : 'Using in-memory fallback'});
+    // Test 2: JSON parse safety (simulate corrupt)
+    let corruptCaught=false; try{ JSON.parse('{"x":1'); }catch(e){ corruptCaught=true }
+    out.push({name:'Corrupt JSON safely handled', pass: corruptCaught, note: corruptCaught? 'Parser throws as expected' : 'Parser did not throw'});
+    // Test 3: Chart.js availability
+    const chartOk = !!window.Chart; out.push({name:'Chart.js loaded', pass: chartOk, note: chartOk? 'Charts enabled' : 'Charts disabled (CDN blocked?)'});
+    // Test 4: Integration function presence
+    const hookOk = typeof window.milfiRegisterData === 'function'; out.push({name:'milfiRegisterData attached', pass: hookOk, note: hookOk? 'Ready to receive data' : 'Could not attach to window'});
+    // Render
+    const box = $('#diag'); const el = $('#diag-out'); if(!box||!el) return;
+    box.style.display='block';
+    el.innerHTML = '<table><thead><tr><th>Check</th><th>Status</th><th>Note</th></tr></thead>'+
+      out.map(r=>`<tr><td>${r.name}</td><td class="${r.pass?'diag-ok':'diag-bad'}">${r.pass?'PASS':'FAIL'}</td><td>${r.note}</td></tr>`).join('')+'</table>';
+  }
+
+  // ===== Events =====
+  $('#btn-save')?.addEventListener('click', ()=>{
+    try{ const blob = new Blob([JSON.stringify(state,null,2)], {type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='milfi_dashboard_snapshot.json'; a.click(); URL.revokeObjectURL(a.href); }
+    catch(e){ setStatus('Snapshot failed'); console.error(e) }
+  });
+  $('#file-load')?.addEventListener('change', e=>{ const f=e.target.files?.[0]; if(!f) return; const r = new FileReader(); r.onload = ev=>{ try{ const data=JSON.parse(ev.target.result); ingestAll(data); renderAll(); setStatus('Snapshot loaded') }catch(err){ alert('Invalid JSON file.'); } }; r.readAsText(f) });
+  $('#btn-demo')?.addEventListener('click', ()=>{ loadDemo(); renderAll(); setStatus('Demo data loaded'); });
+  $('#btn-sync')?.addEventListener('click', ()=>{ pullFromLocalStorage(); renderAll(); });
+  $('#btn-diagnostics')?.addEventListener('click', runDiagnostics);
+
+  $('#btn-add-nw')?.addEventListener('click', ()=>{
+    const last = state.netWorthHistory?.slice(-1)[0];
+    const nextDate = last? (()=>{const d=new Date(last.date); d.setMonth(d.getMonth()+1); return d.toISOString().slice(0,10)})() : new Date().toISOString().slice(0,10);
+    const val = prompt('Enter latest net worth value (USD):', last? (last.value+500) : 20000);
+    if (!val) return;
+    state.netWorthHistory = [...(state.netWorthHistory||[]), {date: nextDate, value: Number(val)}];
+    storage.setItem('MILFI_networth', JSON.stringify(state.netWorthHistory));
+    renderAll();
+  });
+
+  window.addEventListener('storage', (e)=>{ if (e.key && e.key.startsWith('MILFI_')){ pullFromLocalStorage(); renderAll(); setStatus('Updated from another tab'); } });
+
+  // ===== Bootstrap =====
+  pullFromLocalStorage();
+  if (!state.cashflow?.length && !state.netWorthHistory?.length && !state.budget && !state.investments && !state.tsp && !state.fire && !(Array.isArray(state.debts)&&state.debts.length)){
+    loadDemo();
+  }
+  if (!window.Chart) { console.warn('[Mil‑Fi] Chart.js not detected at load'); setStatus('Charts disabled (Chart.js blocked). Data & tables still available.'); }
+  if (window.MILFI_DATA) ingestAll(window.MILFI_DATA);
+  renderAll();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mil-Fi Military Budget Tool</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <a class="btn" href="/HOME PAGE CODE V3.html">Home</a>
+
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #111831;
+      --text: #e8ecff;
+      --accent: #7aa2ff;
+      --input: #1e2749;
+      --good: #3ddc97;
+      --warn: #ffd166;
+      --bad: #ef476f;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+    }
+    header {
+      background-color: var(--panel);
+      padding: 12px;
+      text-align: center;
+      font-size: 1.5em;
+      color: var(--accent);
+      font-weight: bold;
+      border-bottom: 2px solid var(--accent);
+    }
+    .container {
+      padding: 20px;
+      max-width: 1000px;
+      margin: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .section {
+      background-color: var(--panel);
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    .section h2, .section h3 {
+      margin-top: 0;
+      color: var(--good);
+      font-size: 1.2em;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+    }
+    label {
+      font-size: 0.85em;
+      margin-bottom: 4px;
+      display: block;
+      color: #b7c2ff;
+    }
+    input[type="number"] {
+      width: 100%;
+      padding: 10px;
+      background-color: var(--input);
+      border: 1px solid #2c3e50;
+      border-radius: 5px;
+      color: var(--text);
+      font-size: 0.95em;
+    }
+    button {
+      background-color: var(--good);
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      margin-top: 15px;
+      cursor: pointer;
+      font-size: 0.95em;
+      border-radius: 5px;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background-color: #2ecb87;
+    }
+    .summary {
+      margin-top: 15px;
+      background-color: var(--input);
+      padding: 15px;
+      border-radius: 8px;
+      font-size: 1em;
+    }
+    .summary span {
+      display: block;
+      margin-top: 10px;
+    }
+    #chartContainer {
+      background-color: var(--panel);
+      padding: 15px;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+  <a href="Investing_Home.html" style="position:fixed;top:18px;left:18px;z-index:1000;text-decoration:none;"><button style="padding:8px 18px;border-radius:999px;background:#60a5fa;color:#0a0a0a;font-weight:700;border:none;box-shadow:0 2px 10px rgba(96,165,250,.13);cursor:pointer;">← Back</button></a>
+  <header>Mil-Fi Military Budget Calculator</header>
+  <div class="container">
+    <div class="section">
+      <div class="grid">
+        <div><label for="basePay">Base Pay</label><input type="number" id="basePay" placeholder="e.g. 3500"></div>
+        <div><label for="bah">BAH (Housing)</label><input type="number" id="bah" placeholder="e.g. 1500"></div>
+        <div><label for="bas">BAS (Subsistence)</label><input type="number" id="bas" placeholder="e.g. 400"></div>
+        <div><label for="otherIncome">Other Income</label><input type="number" id="otherIncome" placeholder="e.g. 300"></div>
+        <div><label for="housing">Rent/Mortgage</label><input type="number" id="housing" placeholder="e.g. 1200"></div>
+        <div><label for="utilities">Utilities</label><input type="number" id="utilities" placeholder="e.g. 250"></div>
+        <div><label for="groceries">Groceries</label><input type="number" id="groceries" placeholder="e.g. 500"></div>
+        <div><label for="transport">Transportation</label><input type="number" id="transport" placeholder="e.g. 300"></div>
+        <div><label for="communications">Phone/Internet</label><input type="number" id="communications" placeholder="e.g. 150"></div>
+        <div><label for="insurance">Insurance</label><input type="number" id="insurance" placeholder="e.g. 200"></div>
+        <div><label for="childcare">Childcare</label><input type="number" id="childcare" placeholder="e.g. 600"></div>
+        <div><label for="entertainment">Entertainment</label><input type="number" id="entertainment" placeholder="e.g. 100"></div>
+        <div><label for="otherExp">Other Expenses</label><input type="number" id="otherExp" placeholder="e.g. 200"></div>
+        <div><label for="credit">Credit Card Payments</label><input type="number" id="credit" placeholder="e.g. 150"></div>
+        <div><label for="carLoan">Car Loan</label><input type="number" id="carLoan" placeholder="e.g. 300"></div>
+        <div><label for="studentLoan">Student Loan</label><input type="number" id="studentLoan" placeholder="e.g. 250"></div>
+        <div><label for="otherDebt">Other Debt</label><input type="number" id="otherDebt" placeholder="e.g. 100"></div>
+      </div>
+      <button onclick="calculateBudget()">Calculate Budget</button>
+      <div class="summary">
+        <h3>Monthly Budget Summary</h3>
+        <span id="totalIncome"></span>
+        <span id="totalExpenses"></span>
+        <span id="totalDebts"></span>
+        <span id="netResult"></span>
+      </div>
+    </div>
+    <div class="section" id="chartContainer">
+      <h3>Spending Breakdown</h3>
+      <canvas id="budgetChart" height="110"></canvas>
+    </div>
+  </div>
+  <script>
+// ==== USAGE TRACKING (shared) ====
+function milfiGetUsage() {
+  const m = new Date().toISOString().slice(0,7);
+  let u = JSON.parse(localStorage.getItem('milfi_calc_usage')||'{}');
+  if(u.month !== m) u = {month:m, total:0};
+  return u;
+}
+function milfiIncUsage(limit=50) {
+  let u = milfiGetUsage();
+  if(u.total >= limit) return false;
+  u.total++;
+  localStorage.setItem('milfi_calc_usage', JSON.stringify(u));
+  return true;
+}
+function milfiCheckLimit(limit=50) {
+  let u = milfiGetUsage();
+  return u.total < limit;
+}
+
+    let budgetChart = null;
+
+    function formatCurrency(value) {
+      return `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    function calculateBudget() {
+      if(!milfiCheckLimit(50)) {
+        alert('Monthly usage reached, upgrade to pro?');
+        return;
+      }
+      milfiIncUsage(50);
+
+      const incomeFields = ["basePay", "bah", "bas", "otherIncome"];
+      const expenseFields = ["housing", "utilities", "groceries", "transport", "communications", "insurance", "childcare", "entertainment", "otherExp"];
+      const debtFields = ["credit", "carLoan", "studentLoan", "otherDebt"];
+
+      const income = incomeFields.map(id => parseFloat(document.getElementById(id)?.value || 0)).reduce((a, b) => a + b, 0);
+      const expenses = expenseFields.map(id => parseFloat(document.getElementById(id)?.value || 0)).reduce((a, b) => a + b, 0);
+      const debts = debtFields.map(id => parseFloat(document.getElementById(id)?.value || 0)).reduce((a, b) => a + b, 0);
+      const net = income - expenses - debts;
+
+      document.getElementById("totalIncome").textContent = `Total Income: ${formatCurrency(income)}`;
+      document.getElementById("totalExpenses").textContent = `Total Expenses: ${formatCurrency(expenses)}`;
+      document.getElementById("totalDebts").textContent = `Total Debt Payments: ${formatCurrency(debts)}`;
+      document.getElementById("netResult").textContent = `Net Monthly Result: ${formatCurrency(net)}`;
+
+      const chartData = {
+        labels: ["Expenses", "Debt Payments", "Net Savings"],
+        datasets: [{
+          data: [expenses, debts, Math.max(net, 0)],
+          backgroundColor: ["#7aa2ff", "#ef476f", "#3ddc97"]
+        }]
+      };
+
+      const ctx = document.getElementById("budgetChart").getContext("2d");
+      if (budgetChart && typeof budgetChart.destroy === "function") {
+        budgetChart.destroy();
+      }
+      budgetChart = new Chart(ctx, {
+        type: "doughnut",
+        data: chartData,
+        options: {
+          plugins: {
+            legend: {
+              position: "bottom",
+              labels: { color: "#e8ecff" }
+            }
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>

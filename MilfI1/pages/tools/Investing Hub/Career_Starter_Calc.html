@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Career Starter Loan Investment Model</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <a class="btn" href="/HOME PAGE CODE V3.html">Home</a>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #111831;
+      --text: #e8ecff;
+      --accent: #7aa2ff;
+      --input: #1e2749;
+      --good: #3ddc97;
+      --warn: #ffd166;
+      --bad: #ef476f;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+    }
+    header {
+      background-color: var(--panel);
+      padding: 16px;
+      text-align: center;
+      font-size: 1.8em;
+      color: var(--accent);
+      font-weight: bold;
+      border-bottom: 2px solid var(--accent);
+    }
+    .container {
+      padding: 20px;
+      max-width: 960px;
+      margin: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .section {
+      background-color: var(--panel);
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+    }
+    label {
+      font-size: 0.85em;
+      margin-bottom: 4px;
+      display: block;
+      color: #b7c2ff;
+    }
+    input[type="number"], input[type="range"] {
+      width: 100%;
+      padding: 10px;
+      background-color: var(--input);
+      border: 1px solid #2c3e50;
+      border-radius: 5px;
+      color: var(--text);
+      font-size: 1em;
+    }
+    button {
+      background-color: var(--good);
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      cursor: pointer;
+      font-size: 1em;
+      border-radius: 5px;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background-color: #2ecb87;
+    }
+    .summary, .metrics {
+      font-size: 0.95em;
+      line-height: 1.5;
+    }
+    .summary span, .metrics span {
+      display: block;
+      margin-top: 8px;
+    }
+    canvas {
+      background-color: #1a2244;
+      border-radius: 8px;
+      padding: 10px;
+    }
+  </style>
+</head>
+<body>
+  <a href="Investing_Home.html" style="position:fixed;top:18px;left:18px;z-index:1000;text-decoration:none;"><button style="padding:8px 18px;border-radius:999px;background:#60a5fa;color:#0a0a0a;font-weight:700;border:none;box-shadow:0 2px 10px rgba(96,165,250,.13);cursor:pointer;">← Back</button></a>
+  <header>Career Starter Loan Investment Model</header>
+  <div class="container">
+    <div class="section">
+      <div class="grid">
+        <div><label for="loanAmount">Loan Amount ($)</label><input type="number" id="loanAmount" value="25000"></div>
+        <div><label for="interestRate">Interest Rate (%)</label><input type="number" id="interestRate" value="3"></div>
+        <div><label for="loanTerm">Loan Term (Years)</label><input type="number" id="loanTerm" value="5"></div>
+        <div><label for="monthlyInvest">Monthly Investment ($)</label><input type="number" id="monthlyInvest" value="0"></div>
+        <div><label for="investRate">Expected Annual Return (%)</label><input type="number" id="investRate" value="7"></div>
+        <div><label for="percentInvest">% of Loan Invested</label><input type="range" id="percentInvest" min="0" max="100" value="100" oninput="document.getElementById('percentLabel').textContent = this.value + '%'">
+        <span id="percentLabel">100%</span></div>
+        <div><label for="earlyPay">Early Payment Monthly ($)</label><input type="number" id="earlyPay" value="0"></div>
+      </div>
+      <button onclick="runModel()">Run Model</button>
+      <div class="summary" id="summary"></div>
+      <div class="metrics" id="metrics"></div>
+    </div>
+    <div class="section">
+      <canvas id="modelChart"></canvas>
+    </div>
+  </div>
+
+  <script>
+// ==== USAGE TRACKING (shared) ====
+function milfiGetUsage() {
+  const m = new Date().toISOString().slice(0,7);
+  let u = JSON.parse(localStorage.getItem('milfi_calc_usage')||'{}');
+  if(u.month !== m) u = {month:m, total:0};
+  return u;
+}
+function milfiIncUsage(limit=50) {
+  let u = milfiGetUsage();
+  if(u.total >= limit) return false;
+  u.total++;
+  localStorage.setItem('milfi_calc_usage', JSON.stringify(u));
+  return true;
+}
+function milfiCheckLimit(limit=50) {
+  let u = milfiGetUsage();
+  return u.total < limit;
+}
+
+    function formatCurrency(num) {
+      return '$' + num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function runModel() {
+      if(!milfiCheckLimit(50)) {
+        alert('Monthly usage reached, upgrade to pro?');
+        return;
+      }
+      milfiIncUsage(50);
+
+      const loanAmount = parseFloat(document.getElementById('loanAmount').value);
+      const rate = parseFloat(document.getElementById('interestRate').value) / 100 / 12;
+      const years = parseInt(document.getElementById('loanTerm').value);
+      const n = years * 12;
+      const monthlyInvest = parseFloat(document.getElementById('monthlyInvest').value);
+      const investRate = parseFloat(document.getElementById('investRate').value) / 100 / 12;
+      const investPercent = parseFloat(document.getElementById('percentInvest').value) / 100;
+      const earlyPay = parseFloat(document.getElementById('earlyPay').value);
+
+      const investedPrincipal = loanAmount * investPercent;
+      const monthlyPayment = (loanAmount * rate) / (1 - Math.pow(1 + rate, -n));
+      let remainingLoan = loanAmount;
+      let portfolio = investedPrincipal;
+      let totalPayments = 0;
+      let dataPoints = [];
+
+      for (let i = 1; i <= n; i++) {
+        const interest = remainingLoan * rate;
+        const principal = monthlyPayment - interest + earlyPay;
+        remainingLoan -= principal;
+        portfolio = (portfolio + monthlyInvest) * (1 + investRate);
+        totalPayments += monthlyPayment + earlyPay;
+        dataPoints.push({ x: i, loan: Math.max(remainingLoan, 0), investment: portfolio });
+      }
+
+      const netProfit = portfolio - totalPayments;
+      const cashOnCash = ((portfolio - investedPrincipal) / investedPrincipal) * 100;
+      const irr = (Math.pow(portfolio / investedPrincipal, 1 / years) - 1) * 100;
+
+      document.getElementById('summary').innerHTML = `
+        <span>Monthly Loan Payment: <strong>${formatCurrency(monthlyPayment)}</strong></span>
+        <span>Total Payments (Including Early): <strong>${formatCurrency(totalPayments)}</strong></span>
+        <span>Ending Investment Value: <strong>${formatCurrency(portfolio)}</strong></span>
+        <span>Net P/L: <strong style="color: ${netProfit >= 0 ? 'var(--good)' : 'var(--bad)'}">${formatCurrency(netProfit)}</strong></span>
+      `;
+
+      document.getElementById('metrics').innerHTML = `
+        <span>Cash-on-Cash Return: <strong>${cashOnCash.toFixed(2)}%</strong></span>
+        <span>IRR: <strong>${irr.toFixed(2)}%</strong></span>
+      `;
+
+      const ctx = document.getElementById('modelChart').getContext('2d');
+      if (window.modelChart && typeof window.modelChart.destroy === 'function') {
+        window.modelChart.destroy();
+      }
+      window.modelChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: dataPoints.map(d => `Month ${d.x}`),
+          datasets: [
+            { label: 'Remaining Loan', data: dataPoints.map(d => d.loan), borderColor: '#ef476f', fill: false },
+            { label: 'Investment Value', data: dataPoints.map(d => d.investment), borderColor: '#3ddc97', fill: false }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { labels: { color: '#e8ecff' } } },
+          scales: {
+            x: { ticks: { color: '#b7c2ff' } },
+            y: { ticks: { color: '#b7c2ff' } }
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>

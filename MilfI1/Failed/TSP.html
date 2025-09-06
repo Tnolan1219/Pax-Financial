@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mil-Fi TSP Calculator</title>
+  <a href="/HOME PAGE CODE V3.html">Home</a>
+
+
+
+  
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #111831;
+      --text: #e8ecff;
+      --accent: #7aa2ff;
+      --input: #1e2749;
+      --good: #3ddc97;
+    }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+    }
+    header {
+      background-color: var(--panel);
+      padding: 20px;
+      text-align: center;
+      font-size: 1.8em;
+      color: var(--accent);
+    }
+    .container {
+      padding: 20px;
+      max-width: 1200px;
+      margin: auto;
+    }
+    .section {
+      background-color: var(--panel);
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 10px;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      background-color: var(--input);
+      color: var(--text);
+      border: none;
+      border-radius: 5px;
+    }
+    button {
+      background-color: var(--accent);
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      margin-top: 20px;
+      cursor: pointer;
+      font-size: 1em;
+      border-radius: 5px;
+    }
+    canvas {
+      margin-top: 20px;
+    }
+    .results {
+      margin-top: 20px;
+      background-color: var(--input);
+      padding: 15px;
+      border-radius: 8px;
+    }
+    .results span {
+      display: block;
+      margin-top: 10px;
+    }
+    .fund-explainer {
+      font-size: 0.9em;
+      color: #b0bbff;
+      margin-top: 8px;
+    }
+    .save-controls {
+      margin-top: 30px;
+      background-color: var(--panel);
+      padding: 20px;
+      border-radius: 10px;
+    }
+  </style>
+
+      <!-- Tabs -->
+    <div class="tabs" role="tablist" aria-label="Sections">
+      <div class="tab active" data-target="#budget">TSP</div>
+      <div class="tab" data-target="#fire">Career Starter Loan</div>
+
+    </head>
+<body>
+  <a href="Investing_Home.html" style="position:fixed;top:18px;left:18px;z-index:1000;text-decoration:none;"><button style="padding:8px 18px;border-radius:999px;background:#60a5fa;color:#0a0a0a;font-weight:700;border:none;box-shadow:0 2px 10px rgba(96,165,250,.13);cursor:pointer;">← Back</button></a>
+  <header>Mil-Fi TSP Compound Growth Calculator</header>
+  <div class="container">
+    <div class="section">
+      <h2>TSP Fund Allocation</h2>
+      <label>G Fund (%)</label><input type="number" id="gFund" value="30">
+      <div class="fund-explainer">Government Securities – virtually risk-free, low returns.</div>
+
+      <label>F Fund (%)</label><input type="number" id="fFund" value="20">
+      <div class="fund-explainer">Fixed Income Index – bonds, moderate risk.</div>
+
+      <label>C Fund (%)</label><input type="number" id="cFund" value="20">
+      <div class="fund-explainer">Common Stock Index – tracks the S&P 500.</div>
+
+      <label>S Fund (%)</label><input type="number" id="sFund" value="20">
+      <div class="fund-explainer">Small Cap Index – U.S. small/mid-sized companies.</div>
+
+      <label>I Fund (%)</label><input type="number" id="iFund" value="10">
+      <div class="fund-explainer">International Stock Index – foreign developed markets.</div>
+    </div>
+
+    <div class="section">
+      <h2>Investment Settings</h2>
+      <label>Initial Investment ($)</label><input type="number" id="initial" value="10000">
+      <label>Monthly Contribution ($)</label><input type="number" id="monthly" value="500">
+      <label>Employer Match (%)</label><input type="number" id="match" value="5">
+      <label>Annual Contribution Increase (%)</label><input type="number" id="increase" value="0">
+      <label>Years</label><input type="number" id="years" value="30">
+      <button onclick="calculateGrowth()">Calculate</button>
+    </div>
+
+    <div class="section">
+      <h2>Growth Projection</h2>
+      <canvas id="growthChart" height="150"></canvas>
+      <div class="results">
+        <h3>Summary</h3>
+        <span id="totalInvested"></span>
+        <span id="totalValue"></span>
+        <span id="totalGain"></span>
+      </div>
+    </div>
+
+    <div class="save-controls">
+      <h2>Save & Load Projections</h2>
+      <label>Projection Name</label>
+      <input type="text" id="saveName" placeholder="e.g. 'Aggressive Growth 2045'">
+      <button onclick="saveProjection()">Save</button>
+      <select id="savedProjections"></select>
+      <button onclick="loadProjection()">Load</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+// ==== USAGE TRACKING (shared) ====
+function milfiGetUsage() {
+  const m = new Date().toISOString().slice(0,7);
+  let u = JSON.parse(localStorage.getItem('milfi_calc_usage')||'{}');
+  if(u.month !== m) u = {month:m, total:0};
+  return u;
+}
+function milfiIncUsage(limit=50) {
+  let u = milfiGetUsage();
+  if(u.total >= limit) return false;
+  u.total++;
+  localStorage.setItem('milfi_calc_usage', JSON.stringify(u));
+  return true;
+}
+function milfiCheckLimit(limit=50) {
+  let u = milfiGetUsage();
+  return u.total < limit;
+}
+
+    const fundReturns = { g: 2.5, f: 4.0, c: 10.0, s: 12.0, i: 7.0 };
+
+    function calculateGrowth() {
+      if(!milfiCheckLimit(50)) {
+        alert('Monthly usage reached, upgrade to pro?');
+        return;
+      }
+      milfiIncUsage(50);
+
+      const initial = parseFloat(document.getElementById("initial").value);
+      const monthly = parseFloat(document.getElementById("monthly").value);
+      const matchPercent = parseFloat(document.getElementById("match").value) / 100;
+      const increase = parseFloat(document.getElementById("increase").value) / 100;
+      const years = parseInt(document.getElementById("years").value);
+      const months = years * 12;
+
+      const g = parseFloat(document.getElementById("gFund").value) / 100;
+      const f = parseFloat(document.getElementById("fFund").value) / 100;
+      const c = parseFloat(document.getElementById("cFund").value) / 100;
+      const s = parseFloat(document.getElementById("sFund").value) / 100;
+      const i = parseFloat(document.getElementById("iFund").value) / 100;
+
+      const effectiveAnnualReturn = (g * fundReturns.g + f * fundReturns.f + c * fundReturns.c + s * fundReturns.s + i * fundReturns.i);
+      const rate = effectiveAnnualReturn / 100 / 12;
+
+      let balance = initial;
+      let currentContribution = monthly;
+      let totalInvested = initial;
+      let data = [];
+
+      for (let m = 1; m <= months; m++) {
+        if (m % 12 === 0) currentContribution *= (1 + increase);
+        const match = currentContribution * matchPercent;
+        const totalMonthly = currentContribution + match;
+        balance += totalMonthly;
+        balance *= (1 + rate);
+        totalInvested += currentContribution;
+        data.push(balance.toFixed(2));
+      }
+
+      const labels = Array.from({ length: months }, (_, i) => `Month ${i + 1}`);
+      const finalBalance = balance.toFixed(2);
+
+      document.getElementById("totalInvested").textContent = `Total Invested (Your Contribution): $${totalInvested.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      document.getElementById("totalValue").textContent = `Projected Final Value: $${parseFloat(finalBalance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      document.getElementById("totalGain").textContent = `Total Gain: $${(parseFloat(finalBalance) - totalInvested).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+      const ctx = document.getElementById("growthChart").getContext("2d");
+      if (window.myChart) window.myChart.destroy();
+      window.myChart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [{
+            label: "TSP Account Value",
+            data,
+            borderColor: "#7aa2ff",
+            backgroundColor: "rgba(122, 162, 255, 0.3)",
+            fill: true,
+            tension: 0.3
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: true },
+            tooltip: {
+              mode: "index",
+              intersect: false
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { color: "#e8ecff" },
+              grid: { color: "#2c3e50" }
+            },
+            x: {
+              ticks: { color: "#e8ecff" },
+              grid: { color: "#2c3e50" }
+            }
+          }
+        }
+      });
+    }
+
+    function saveProjection() {
+      const name = document.getElementById("saveName").value;
+      if (!name) return alert("Please enter a name for the projection.");
+
+      const projection = {
+        g: document.getElementById("gFund").value,
+        f: document.getElementById("fFund").value,
+        c: document.getElementById("cFund").value,
+        s: document.getElementById("sFund").value,
+        i: document.getElementById("iFund").value,
+        initial: document.getElementById("initial").value,
+        monthly: document.getElementById("monthly").value,
+        match: document.getElementById("match").value,
+        increase: document.getElementById("increase").value,
+        years: document.getElementById("years").value
+      };
+      localStorage.setItem(name, JSON.stringify(projection));
+      updateSavedProjections();
+    }
+
+    function loadProjection() {
+      const selector = document.getElementById("savedProjections");
+      const name = selector.value;
+      if (!name) return;
+      const proj = JSON.parse(localStorage.getItem(name));
+      if (!proj) return;
+
+      document.getElementById("gFund").value = proj.g;
+      document.getElementById("fFund").value = proj.f;
+      document.getElementById("cFund").value = proj.c;
+      document.getElementById("sFund").value = proj.s;
+      document.getElementById("iFund").value = proj.i;
+      document.getElementById("initial").value = proj.initial;
+      document.getElementById("monthly").value = proj.monthly;
+      document.getElementById("match").value = proj.match;
+      document.getElementById("increase").value = proj.increase;
+      document.getElementById("years").value = proj.years;
+
+      calculateGrowth();
+    }
+
+    function updateSavedProjections() {
+      const selector = document.getElementById("savedProjections");
+      selector.innerHTML = "";
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        const option = document.createElement("option");
+        option.value = key;
+        option.text = key;
+        selector.appendChild(option);
+      }
+    }
+
+    window.onload = updateSavedProjections;
+  </script>
+</body>
+</html>
